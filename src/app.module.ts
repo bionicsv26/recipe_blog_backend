@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { envValidationSchema } from './config/env.validation';
       },
       expandVariables: true, // включает интерполяцию переменных вида ${POSTGRES_USER}
     }),
-    PrismaModule],
+    PrismaModule,
+    RedisModule],
   controllers: [AppController],
   providers: [AppService],
 })
