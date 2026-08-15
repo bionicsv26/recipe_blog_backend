@@ -6,3 +6,102 @@ datasource db {
   provider = "postgresql"
   url      = env("POSTGRES_URI")
 }
+
+enum Role {
+  USER
+  CHEF
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String  @map("password_hash")
+  role         Role    @default(USER)
+  isActive     Boolean @default(true) @map("is_active")
+
+  profile Profile?
+  recipes Recipe[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@map("users")
+}
+
+model Profile {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  username  String  @unique
+  bio       String?
+  avatarUrl String? @map("avatar_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+model Recipe {
+  id            String  @id @default(uuid())
+  title         String
+  slug          String  @unique
+  description   String?
+  coverImageUrl String? @map("cover_image_url") // Опциональная обложка
+  isPublished   Boolean @default(false) @map("is_published")
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Связи с ингредиентами и изображениями
+  ingredients RecipeIngredient[]
+  images      RecipeImage[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([authorId])
+  @@map("recipes")
+}
+
+// Ингредиент в конкретном рецепте
+model RecipeIngredient {
+  id       String @id @default(uuid())
+  recipeId String @map("recipe_id")
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  name   String // например: "Мука пшеничная"
+  amount Decimal @db.Decimal(10, 2) // например: 250.00
+  unit   String // например: "г", "мл", "ст. л.", "шт"
+  note   String? // например: "просеянная", "комнатной температуры"
+  order  Int     @default(0) // порядок в списке
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([recipeId])
+  @@index([name]) // полезно для быстрого поиска рецептов по ингредиенту
+  @@map("recipe_ingredients")
+}
+
+// Изображения рецепта (галерея и шаги)
+model RecipeImage {
+  id       String @id @default(uuid())
+  recipeId String @map("recipe_id")
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  url     String // путь в S3 / CDN / MinIO
+  title   String? // название/alt текст (например: "Готовое блюдо")
+  caption String? // расширенная подпись
+  isCover Boolean @default(false) @map("is_cover") // главное фото обложки
+  order   Int     @default(0) // порядок показа в галерее
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([recipeId])
+  @@map("recipe_images")
+}
