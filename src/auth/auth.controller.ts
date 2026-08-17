@@ -14,6 +14,8 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -72,6 +74,20 @@ export class AuthController {
   ) {
     await this.authService.logoutAll(userId);
     res.clearCookie('refreshToken');
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   private setRefreshTokenCookie(res: Response, token: string) {

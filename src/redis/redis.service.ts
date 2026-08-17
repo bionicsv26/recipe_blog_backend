@@ -81,4 +81,23 @@ export class RedisService implements OnModuleDestroy {
   getClient(): Redis {
     return this.client;
   }
+
+  // Сохранение токена сброса (TTL обычно 15 минут / 900 сек)
+  async savePasswordResetToken(userId: string, token: string, ttlSeconds: number = 900): Promise<void> {
+    const key = `password_reset:${token}`;
+    await this.client.set(key, userId, 'EX', ttlSeconds);
+  }
+
+  // Получение userId по токену сброса
+  async getUserIdByPasswordResetToken(token: string): Promise<string | null> {
+    const key = `password_reset:${token}`;
+    return this.client.get(key);
+  }
+
+  // Удаление токена после успешного сброса
+  async invalidatePasswordResetToken(token: string): Promise<void> {
+    const key = `password_reset:${token}`;
+    await this.client.del(key);
+  }
 }
+

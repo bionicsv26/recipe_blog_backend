@@ -3,10 +3,12 @@ import {
   ConflictException,
   UnauthorizedException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -14,6 +16,7 @@ import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interfac
 import { AuthTokens } from './interfaces/tokens.interface';
 import { Role } from '@prisma/client';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @Injectable()
 export class AuthService {
@@ -102,6 +105,49 @@ export class AuthService {
 
   async logoutAll(userId: string): Promise<void> {
     await this.redisService.invalidateAllUserSessions(userId);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    // Возвращаем одинаковое сообщение даже если email не найден (защита от перебора пользователей)
+    if (!user || !user.isActive) {
+      return { message: 'If this email exists, a password reset link has been sent.' };
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    await this.redisService.savePasswordResetToken(user.id, resetToken, 900); // 15 минут
+
+    // TODO: Вызов почтового сервиса (MailService.sendPasswordResetEmail(user.email, resetToken))
+    console.log(`[DEBUG] Password reset token for ${user.email}: ${resetToken}`);
+
+    return { message: 'If this email exists, a password reset link has been sent.' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const userId = await this.redisService.getUserIdByPasswordResetToken(dto.token);
+
+    if (!userId) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    const newPasswordHash = await argon2.hash(dto.newPassword);
+
+    // 1. Обновляем пароль в базе
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    // 2. Удаляем использованный токен сброса
+    await this.redisService.invalidatePasswordResetToken(dto.token);
+
+    // 3. Завершаем все активные сессии на всех устройствах
+    await this.redisService.invalidateAllUserSessions(userId);
+
+    return { message: 'Password has been reset successfully. Please log in with your new password.' };
   }
 
   private async generateAndSaveTokens(
