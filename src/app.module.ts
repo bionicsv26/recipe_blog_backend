@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
+import { CaslModule } from './casl/casl.module';
 
 @Module({
   imports: [
@@ -20,7 +21,9 @@ import { AuthModule } from './auth/auth.module';
     }),
     PrismaModule,
     RedisModule,
-    AuthModule],
+    AuthModule,
+    CaslModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
