@@ -100,6 +100,10 @@ export class AuthService {
     await this.redisService.invalidateRefreshToken(userId, jti);
   }
 
+  async logoutAll(userId: string): Promise<void> {
+    await this.redisService.invalidateAllUserSessions(userId);
+  }
+
   private async generateAndSaveTokens(
     userId: string,
     email: string,
