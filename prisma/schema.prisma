@@ -14,6 +14,12 @@ enum Role {
   ADMIN
 }
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model User {
   id           String  @id @default(uuid())
   email        String  @unique
@@ -50,55 +56,77 @@ model Recipe {
   id            String  @id @default(uuid())
   title         String
   slug          String  @unique
-  description   String?
-  coverImageUrl String? @map("cover_image_url") // Опциональная обложка
-  isPublished   Boolean @default(false) @map("is_published")
+  description   String? @db.VarChar(500)
+  coverImageUrl String? @map("cover_image_url")
+
+  // Кулинарные метрики
+  prepTime    Int?       @map("prep_time") // время подготовки (в минутах)
+  cookTime    Int        @map("cook_time") // время готовки (в минутах)
+  servings    Int        @default(1) // количество порций
+  difficulty  Difficulty @default(MEDIUM)
+  isPublished Boolean    @default(false) @map("is_published")
 
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  // Связи с ингредиентами и изображениями
+  // Связи
   ingredients RecipeIngredient[]
+  steps       RecipeStep[]
   images      RecipeImage[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([authorId])
+  @@index([isPublished])
   @@map("recipes")
 }
 
-// Ингредиент в конкретном рецепте
 model RecipeIngredient {
   id       String @id @default(uuid())
   recipeId String @map("recipe_id")
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  name   String // например: "Мука пшеничная"
-  amount Decimal @db.Decimal(10, 2) // например: 250.00
-  unit   String // например: "г", "мл", "ст. л.", "шт"
-  note   String? // например: "просеянная", "комнатной температуры"
-  order  Int     @default(0) // порядок в списке
+  name   String // "Мука пшеничная"
+  amount Decimal @db.Decimal(10, 2) // 250.00
+  unit   String // "г", "мл", "ст. л.", "шт"
+  note   String? // "просеянная"
+  order  Int     @default(0)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([recipeId])
-  @@index([name]) // полезно для быстрого поиска рецептов по ингредиенту
+  @@index([name])
   @@map("recipe_ingredients")
 }
 
-// Изображения рецепта (галерея и шаги)
+// Пошаговое приготовление
+model RecipeStep {
+  id       String @id @default(uuid())
+  recipeId String @map("recipe_id")
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  stepNumber  Int     @map("step_number") // 1, 2, 3...
+  instruction String  @db.Text // описание шага
+  imageUrl    String? @map("image_url") // опциональное фото конкретного шага
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([recipeId, stepNumber])
+  @@index([recipeId])
+  @@map("recipe_steps")
+}
+
+// Дополнительная галерея готового блюда
 model RecipeImage {
   id       String @id @default(uuid())
   recipeId String @map("recipe_id")
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  url     String // путь в S3 / CDN / MinIO
-  title   String? // название/alt текст (например: "Готовое блюдо")
-  caption String? // расширенная подпись
-  isCover Boolean @default(false) @map("is_cover") // главное фото обложки
-  order   Int     @default(0) // порядок показа в галерее
+  url     String // CDN / S3 url
+  caption String? // подпись
+  order   Int     @default(0)
 
   createdAt DateTime @default(now()) @map("created_at")
 
