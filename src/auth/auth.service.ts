@@ -17,6 +17,7 @@ import { AuthTokens } from './interfaces/tokens.interface';
 import { Role } from '@prisma/client';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly mailService: MailService,
   ) { }
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
@@ -120,8 +122,8 @@ export class AuthService {
     const resetToken = crypto.randomBytes(32).toString('hex');
     await this.redisService.savePasswordResetToken(user.id, resetToken, 900); // 15 минут
 
-    // TODO: Вызов почтового сервиса (MailService.sendPasswordResetEmail(user.email, resetToken))
-    console.log(`[DEBUG] Password reset token for ${user.email}: ${resetToken}`);
+    // Асинхронная отправка письма
+    await this.mailService.sendPasswordResetEmail(user.email, resetToken);
 
     return { message: 'If this email exists, a password reset link has been sent.' };
   }

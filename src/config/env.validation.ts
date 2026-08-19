@@ -27,4 +27,12 @@ export const envValidationSchema = Joi.object({
   // JWT Refresh Token
   JWT_REFRESH_SECRET: Joi.string().min(16).required(),
   JWT_REFRESH_EXPIRATION: Joi.number().positive().default(604800), // 7 дней в секундах
+
+  // Mail
+  SMTP_HOST: Joi.string().default('localhost'),
+  SMTP_PORT: Joi.number().port().default(1025),
+  SMTP_USER: Joi.string().allow('', null).optional(),
+  SMTP_PASSWORD: Joi.string().allow('', null).optional(),
+  SMTP_FROM: Joi.string().default('noreply@recipeblog.dev'),
+  FRONTEND_URL: Joi.string().uri().default('http://localhost:5173'),
 });
