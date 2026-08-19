@@ -112,20 +112,32 @@ export class AuthService {
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      include: { profile: true },
     });
 
-    // Возвращаем одинаковое сообщение даже если email не найден (защита от перебора пользователей)
+    // Безопасный ответ: не раскрываем, существует ли такой email в базе
     if (!user || !user.isActive) {
-      return { message: 'If this email exists, a password reset link has been sent.' };
+      return {
+        message: 'If this email exists, a password reset link has been sent.',
+      };
     }
 
+    // 1. Генерация безопасного случайного токена
     const resetToken = crypto.randomBytes(32).toString('hex');
-    await this.redisService.savePasswordResetToken(user.id, resetToken, 900); // 15 минут
 
-    // Асинхронная отправка письма
-    await this.mailService.sendPasswordResetEmail(user.email, resetToken);
+    // 2. Сохранение токена в Redis на 15 минут (900 секунд)
+    await this.redisService.savePasswordResetToken(user.id, resetToken, 900);
 
-    return { message: 'If this email exists, a password reset link has been sent.' };
+    // 3. Отправка письма с шаблоном Handlebars
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      resetToken,
+      user.profile?.username,
+    );
+
+    return {
+      message: 'If this email exists, a password reset link has been sent.',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
