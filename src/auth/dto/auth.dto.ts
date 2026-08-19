@@ -18,6 +18,7 @@ export const RegisterSchema = z.object({
     }),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  bio: z.string().max(300, { message: 'Bio cannot exceed 300 characters' }).optional(),
 });
 
 // Схема логина

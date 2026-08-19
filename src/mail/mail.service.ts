@@ -145,4 +145,28 @@ export class MailService implements OnModuleInit {
       this.logger.error(`Failed to send email to ${to}:`, error);
     }
   }
+
+  async sendWelcomeEmail(to: string, username?: string): Promise<void> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const from = this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER');
+
+    const template = this.getTemplate('welcome');
+    const html = template({
+      username,
+      appUrl: frontendUrl,
+    });
+
+    try {
+      await this.transporter.sendMail({
+        from,
+        to,
+        subject: 'Добро пожаловать в Recipe Blog! 🍳',
+        html,
+      });
+      this.logger.log(`Welcome email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send welcome email to ${to}:`, error);
+      // Ошибку не пробрасываем выше, чтобы сбой почтового сервиса не блокировал регистрацию
+    }
+  }
 }

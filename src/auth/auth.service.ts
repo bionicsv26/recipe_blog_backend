@@ -48,6 +48,7 @@ export class AuthService {
     }
 
     const passwordHash = await argon2.hash(dto.password);
+    const username = dto.username || `user_${Date.now()}`;
 
     const user = await this.prisma.user.create({
       data: {
@@ -55,11 +56,15 @@ export class AuthService {
         passwordHash,
         profile: {
           create: {
-            username: dto.username || `user_${Date.now()}`,
+            username,
+            bio: dto.bio,
           },
         },
       },
     });
+
+    // Отправка приветственного письма (асинхронно)
+    await this.mailService.sendWelcomeEmail(user.email, username);
 
     return this.generateAndSaveTokens(user.id, user.email, user.role);
   }
