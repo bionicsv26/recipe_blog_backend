@@ -1,7 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-// Схема отдельного ингредиента
 export const RecipeIngredientInputSchema = z.object({
   name: z
     .string()
@@ -21,7 +20,6 @@ export const RecipeIngredientInputSchema = z.object({
   order: z.number().int().nonnegative().default(0),
 });
 
-// Схема отдельного шага приготовления
 export const RecipeStepInputSchema = z.object({
   stepNumber: z
     .number({ message: 'Номер шага должен быть числом' })
@@ -38,7 +36,6 @@ export const RecipeStepInputSchema = z.object({
     .nullable(),
 });
 
-// Схема создания рецепта
 export const CreateRecipeSchema = z.object({
   title: z
     .string()
@@ -82,6 +79,21 @@ export const CreateRecipeSchema = z.object({
   steps: z
     .array(RecipeStepInputSchema)
     .min(1, { message: 'Рецепт должен содержать хотя бы один шаг приготовления' }),
+  categoryIds: z
+    .array(z.uuid({ message: 'ID категории должен быть корректным UUID' }))
+    .optional()
+    .default([]),
+  tags: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .min(2, { message: 'Тег должен содержать минимум 2 символа' })
+        .max(30, { message: 'Тег не должен превышать 30 символов' }),
+    )
+    .optional()
+    .default([]),
 });
 
 export class CreateRecipeDto extends createZodDto(CreateRecipeSchema) { }
