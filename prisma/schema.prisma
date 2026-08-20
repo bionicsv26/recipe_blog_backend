@@ -73,6 +73,8 @@ model Recipe {
   ingredients RecipeIngredient[]
   steps       RecipeStep[]
   images      RecipeImage[]
+  categories  RecipeCategory[]
+  tags        RecipeTag[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -132,4 +134,66 @@ model RecipeImage {
 
   @@index([recipeId])
   @@map("recipe_images")
+}
+
+// Категории блюд
+model Category {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String? @db.VarChar(255)
+  imageUrl    String? @map("image_url")
+  order       Int     @default(0)
+
+  recipes RecipeCategory[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("categories")
+}
+
+// Связь многие-ко-многим: Рецепт <-> Категория
+model RecipeCategory {
+  recipeId   String @map("recipe_id")
+  categoryId String @map("category_id")
+
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@id([recipeId, categoryId])
+  @@index([categoryId])
+  @@map("recipe_categories")
+}
+
+// Теги для быстрой фильтрации
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  recipes RecipeTag[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([slug])
+  @@map("tags")
+}
+
+// Связь многие-ко-многим: Рецепт <-> Тег
+model RecipeTag {
+  recipeId String @map("recipe_id")
+  tagId    String @map("tag_id")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@id([recipeId, tagId])
+  @@index([tagId])
+  @@map("recipe_tags")
 }
