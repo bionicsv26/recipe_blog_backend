@@ -11,6 +11,7 @@ import { CaslModule } from './casl/casl.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { MailModule } from './mail/mail.module';
+import { RecipesModule } from './recipes/recipes.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MailModule } from './mail/mail.module';
     AuthModule,
     CaslModule,
     MailModule,
+    RecipesModule,
   ],
   controllers: [AppController],
   providers: [

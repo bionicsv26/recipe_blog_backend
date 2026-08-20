@@ -6,41 +6,24 @@ import {
   InferSubjects,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { User as UserEntity, Recipe as RecipeEntity, Role } from '@prisma/client';
+import { User, Recipe, Role } from '@prisma/client';
 
 export enum Action {
-  Manage = 'manage', // Любое действие (полный доступ)
+  Manage = 'manage',
   Create = 'create',
   Read = 'read',
   Update = 'update',
   Delete = 'delete',
 }
 
-// Классы-обёртки для корректной работы CASL в рантайме с типами Prisma
-export class User implements UserEntity {
-  id!: string;
-  email!: string;
-  passwordHash!: string;
-  role!: Role;
-  isActive!: boolean;
-  createdAt!: Date;
-  updatedAt!: Date;
-}
+// Передаем интерфейсы Prisma напрямую и указываем true (for interface mode)
+export type AppSubjects =
+  | 'all'
+  | 'Recipe'
+  | 'User'
+  | InferSubjects<Recipe | User, true>;
 
-export class Recipe implements RecipeEntity {
-  id!: string;
-  title!: string;
-  slug!: string;
-  description!: string | null;
-  coverImageUrl!: string | null;
-  isPublished!: boolean;
-  authorId!: string;
-  createdAt!: Date;
-  updatedAt!: Date;
-}
-
-export type Subjects = InferSubjects<typeof Recipe | typeof User> | 'all';
-export type AppAbility = MongoAbility<[Action, Subjects]>;
+export type AppAbility = MongoAbility<[Action, AppSubjects]>;
 
 @Injectable()
 export class CaslAbilityFactory {
@@ -48,28 +31,31 @@ export class CaslAbilityFactory {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
     if (user.role === Role.ADMIN) {
-      // Полный доступ ко всем ресурсам
       can(Action.Manage, 'all');
     } else if (user.role === Role.MODERATOR) {
-      // Модератор может просматривать всё и удалять рецепты
       can(Action.Read, 'all');
-      can(Action.Delete, Recipe);
-      can(Action.Update, Recipe, { authorId: user.id });
+      can(Action.Delete, 'Recipe');
+      can(Action.Update, 'Recipe', { authorId: user.id });
     } else {
-      // Обычный пользователь (USER / CHEF)
-      can(Action.Read, Recipe, { isPublished: true });
-      can(Action.Create, Recipe);
-      can(Action.Read, Recipe, { authorId: user.id });
-      can(Action.Update, Recipe, { authorId: user.id });
-      can(Action.Delete, Recipe, { authorId: user.id });
+      can(Action.Create, 'Recipe');
+      can(Action.Read, 'Recipe', { isPublished: true });
+      can(Action.Read, 'Recipe', { authorId: user.id });
+      can(Action.Update, 'Recipe', { authorId: user.id });
+      can(Action.Delete, 'Recipe', { authorId: user.id });
 
-      can(Action.Read, User, { id: user.id });
-      can(Action.Update, User, { id: user.id });
+      can(Action.Read, 'User', { id: user.id });
+      can(Action.Update, 'User', { id: user.id });
     }
 
     return build({
-      detectSubjectType: (item) =>
-        item.constructor as ExtractSubjectType<Subjects>,
+      detectSubjectType: (item) => {
+        if (!item || typeof item === 'string') {
+          return item as ExtractSubjectType<AppSubjects>;
+        }
+        return (item.constructor?.name === 'Object'
+          ? (item as any).__typename || 'Recipe'
+          : item.constructor.name) as ExtractSubjectType<AppSubjects>;
+      },
     });
   }
 }
