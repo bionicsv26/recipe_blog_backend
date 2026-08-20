@@ -15,6 +15,8 @@ import { RecipesModule } from './recipes/recipes.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { CategoriesModule } from './categories/categories.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { join } from 'path';
     MailModule,
     RecipesModule,
     UploadsModule,
+    CategoriesModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [
