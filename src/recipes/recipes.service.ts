@@ -4,13 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CaslAbilityFactory, AppAbility, Action } from '../casl/casl-ability.factory';
+import { CaslAbilityFactory, Action } from '../casl/casl-ability.factory';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { QueryRecipeDto } from './dto/query-recipe.dto';
 import { CurrentUserData } from '../common/decorators/current-user.decorator';
 import { slugify } from '../common/utils/slugify.util';
-import { Prisma, Recipe } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { subject } from '@casl/ability';
 
 @Injectable()
@@ -33,6 +33,28 @@ export class RecipesService {
     return candidateSlug;
   }
 
+  /**
+   * Создание тегов или получение существующих id
+   */
+  private async resolveTagIds(tx: Prisma.TransactionClient, tagNames: string[]): Promise<string[]> {
+    if (!tagNames || tagNames.length === 0) return [];
+
+    const uniqueNames = Array.from(new Set(tagNames.map((t) => t.trim().toLowerCase()))).filter(Boolean);
+
+    const tagIds: string[] = [];
+    for (const name of uniqueNames) {
+      const slug = slugify(name);
+      const tag = await tx.tag.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug },
+      });
+      tagIds.push(tag.id);
+    }
+
+    return tagIds;
+  }
+
   async create(dto: CreateRecipeDto, user: CurrentUserData) {
     const ability = this.caslAbilityFactory.createForUser(user);
     if (!ability.can(Action.Create, 'Recipe')) {
@@ -41,55 +63,71 @@ export class RecipesService {
 
     const slug = await this.generateUniqueSlug(dto.title);
 
-    return this.prisma.recipe.create({
-      data: {
-        title: dto.title,
-        slug,
-        description: dto.description,
-        coverImageUrl: dto.coverImageUrl,
-        prepTime: dto.prepTime,
-        cookTime: dto.cookTime,
-        servings: dto.servings,
-        difficulty: dto.difficulty,
-        isPublished: dto.isPublished,
-        authorId: user.id,
-        ingredients: {
-          create: dto.ingredients.map((ing) => ({
-            name: ing.name,
-            amount: new Prisma.Decimal(ing.amount),
-            unit: ing.unit,
-            note: ing.note,
-            order: ing.order,
-          })),
-        },
-        steps: {
-          create: dto.steps.map((st) => ({
-            stepNumber: st.stepNumber,
-            instruction: st.instruction,
-            imageUrl: st.imageUrl,
-          })),
-        },
-      },
-      include: {
-        ingredients: { orderBy: { order: 'asc' } },
-        steps: { orderBy: { stepNumber: 'asc' } },
-        author: {
-          select: {
-            id: true,
-            email: true,
-            profile: { select: { username: true, avatarUrl: true } },
+    return this.prisma.$transaction(async (tx) => {
+      const tagIds = await this.resolveTagIds(tx, dto.tags);
+
+      return tx.recipe.create({
+        data: {
+          title: dto.title,
+          slug,
+          description: dto.description,
+          coverImageUrl: dto.coverImageUrl,
+          prepTime: dto.prepTime,
+          cookTime: dto.cookTime,
+          servings: dto.servings,
+          difficulty: dto.difficulty,
+          isPublished: dto.isPublished,
+          authorId: user.id,
+          ingredients: {
+            create: dto.ingredients.map((ing) => ({
+              name: ing.name,
+              amount: new Prisma.Decimal(ing.amount),
+              unit: ing.unit,
+              note: ing.note,
+              order: ing.order,
+            })),
+          },
+          steps: {
+            create: dto.steps.map((st) => ({
+              stepNumber: st.stepNumber,
+              instruction: st.instruction,
+              imageUrl: st.imageUrl,
+            })),
+          },
+          categories: {
+            create: dto.categoryIds.map((categoryId) => ({
+              categoryId,
+            })),
+          },
+          tags: {
+            create: tagIds.map((tagId) => ({
+              tagId,
+            })),
           },
         },
-      },
+        include: {
+          ingredients: { orderBy: { order: 'asc' } },
+          steps: { orderBy: { stepNumber: 'asc' } },
+          categories: { include: { category: true } },
+          tags: { include: { tag: true } },
+          author: {
+            select: {
+              id: true,
+              email: true,
+              profile: { select: { username: true, avatarUrl: true } },
+            },
+          },
+        },
+      });
     });
   }
 
   async findAll(query: QueryRecipeDto, currentUser?: CurrentUserData) {
-    const { page, limit, search, difficulty, authorId, ingredient } = query;
+    const { page, limit, search, difficulty, authorId, ingredient, categorySlug, tagSlug } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.RecipeWhereInput = {
-      isPublished: true, // По умолчанию публичный каталог отдает только опубликованные
+      isPublished: true,
       ...(difficulty && { difficulty }),
       ...(authorId && { authorId }),
       ...(search && {
@@ -103,6 +141,16 @@ export class RecipesService {
           some: { name: { contains: ingredient, mode: 'insensitive' } },
         },
       }),
+      ...(categorySlug && {
+        categories: {
+          some: { category: { slug: categorySlug } },
+        },
+      }),
+      ...(tagSlug && {
+        tags: {
+          some: { tag: { slug: tagSlug } },
+        },
+      }),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -112,6 +160,8 @@ export class RecipesService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
+          categories: { include: { category: { select: { id: true, name: true, slug: true } } } },
+          tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
           author: {
             select: {
               id: true,
@@ -141,6 +191,8 @@ export class RecipesService {
       include: {
         ingredients: { orderBy: { order: 'asc' } },
         steps: { orderBy: { stepNumber: 'asc' } },
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
         images: { orderBy: { order: 'asc' } },
         author: {
           select: {
@@ -189,6 +241,7 @@ export class RecipesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Обновление ингредиентов
       if (dto.ingredients) {
         await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
         await tx.recipeIngredient.createMany({
@@ -203,6 +256,7 @@ export class RecipesService {
         });
       }
 
+      // Обновление шагов
       if (dto.steps) {
         await tx.recipeStep.deleteMany({ where: { recipeId: id } });
         await tx.recipeStep.createMany({
@@ -213,6 +267,33 @@ export class RecipesService {
             imageUrl: st.imageUrl,
           })),
         });
+      }
+
+      // Обновление категорий
+      if (dto.categoryIds) {
+        await tx.recipeCategory.deleteMany({ where: { recipeId: id } });
+        if (dto.categoryIds.length > 0) {
+          await tx.recipeCategory.createMany({
+            data: dto.categoryIds.map((categoryId) => ({
+              recipeId: id,
+              categoryId,
+            })),
+          });
+        }
+      }
+
+      // Обновление тегов
+      if (dto.tags) {
+        const tagIds = await this.resolveTagIds(tx, dto.tags);
+        await tx.recipeTag.deleteMany({ where: { recipeId: id } });
+        if (tagIds.length > 0) {
+          await tx.recipeTag.createMany({
+            data: tagIds.map((tagId) => ({
+              recipeId: id,
+              tagId,
+            })),
+          });
+        }
       }
 
       return tx.recipe.update({
@@ -231,6 +312,8 @@ export class RecipesService {
         include: {
           ingredients: { orderBy: { order: 'asc' } },
           steps: { orderBy: { stepNumber: 'asc' } },
+          categories: { include: { category: true } },
+          tags: { include: { tag: true } },
         },
       });
     });
@@ -257,6 +340,8 @@ export class RecipesService {
       where: { authorId: user.id },
       orderBy: { createdAt: 'desc' },
       include: {
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
         _count: { select: { ingredients: true, steps: true } },
       },
     });
