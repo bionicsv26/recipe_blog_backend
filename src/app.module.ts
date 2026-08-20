@@ -12,6 +12,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { MailModule } from './mail/mail.module';
 import { RecipesModule } from './recipes/recipes.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -23,6 +26,13 @@ import { RecipesModule } from './recipes/recipes.module';
         abortEarly: false,  // выводит сразу весь список ошибок валидации при старте
       },
       expandVariables: true, // включает интерполяцию переменных вида ${POSTGRES_USER}
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/static', // Файлы будут доступны по адресу: http://localhost:3000/static/filename.jpg
+      serveStaticOptions: {
+        index: false,
+      },
     }),
     ThrottlerModule.forRoot([
       {
@@ -37,6 +47,7 @@ import { RecipesModule } from './recipes/recipes.module';
     CaslModule,
     MailModule,
     RecipesModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [
