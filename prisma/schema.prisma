@@ -30,6 +30,7 @@ model User {
   profile   Profile?
   recipes   Recipe[]
   favorites Favorite[]
+  reviews   Review[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -67,6 +68,10 @@ model Recipe {
   difficulty  Difficulty @default(MEDIUM)
   isPublished Boolean    @default(false) @map("is_published")
 
+  // Денормализованные метрики рейтинга для быстрой сортировки каталога
+  averageRating Decimal @default(0.0) @map("average_rating") @db.Decimal(3, 2)
+  ratingsCount  Int     @default(0) @map("ratings_count")
+
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
@@ -77,6 +82,7 @@ model Recipe {
   categories  RecipeCategory[]
   tags        RecipeTag[]
   favoritedBy Favorite[]
+  reviews     Review[] // Отзывы к данному рецепту
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -213,4 +219,41 @@ model Favorite {
   @@id([userId, recipeId])
   @@index([recipeId])
   @@map("favorites")
+}
+
+// Модель отзыва и оценки
+model Review {
+  id      String  @id @default(uuid())
+  rating  Int     @db.SmallInt // Оценка от 1 до 5
+  comment String? @db.VarChar(1000)
+
+  userId   String @map("user_id")
+  recipeId String @map("recipe_id")
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  images ReviewImage[] // Фотографии блюда, прикрепленные к отзыву
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Один пользователь может оставить только один отзыв на конкретный рецепт
+  @@unique([userId, recipeId])
+  @@index([recipeId])
+  @@map("reviews")
+}
+
+// Фотографии к отзыву (User Generated Content)
+model ReviewImage {
+  id    String @id @default(uuid())
+  url   String
+  order Int    @default(0)
+
+  reviewId String @map("review_id")
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reviewId])
+  @@map("review_images")
 }
