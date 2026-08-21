@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CaslAbilityFactory, Action } from '../casl/casl-ability.factory';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
-import { QueryRecipeDto } from './dto/query-recipe.dto';
+import { QueryRecipeDto, RecipeSortBy } from './dto/query-recipe.dto';
 import { CurrentUserData } from '../common/decorators/current-user.decorator';
 import { slugify } from '../common/utils/slugify.util';
 import { Prisma } from '@prisma/client';
@@ -122,8 +122,44 @@ export class RecipesService {
     });
   }
 
+  private buildOrderBy(
+    sortBy: string,
+    order: 'asc' | 'desc',
+  ): Prisma.RecipeOrderByWithRelationInput[] {
+    switch (sortBy) {
+      case RecipeSortBy.RATING:
+        return [
+          { averageRating: order },
+          { ratingsCount: 'desc' }, // tie-breaker: при равном рейтинге выше тот, где больше оценок
+        ];
+      case RecipeSortBy.POPULAR:
+        return [
+          { favoritedBy: { _count: order } },
+          { ratingsCount: order },
+        ];
+      case RecipeSortBy.COOK_TIME:
+        return [{ cookTime: order }];
+      case RecipeSortBy.OLDEST:
+        return [{ createdAt: 'asc' }];
+      case RecipeSortBy.NEWEST:
+      default:
+        return [{ createdAt: order }];
+    }
+  }
+
   async findAll(query: QueryRecipeDto, currentUser?: CurrentUserData) {
-    const { page, limit, search, difficulty, authorId, ingredient, categorySlug, tagSlug } = query;
+    const {
+      page,
+      limit,
+      search,
+      difficulty,
+      authorId,
+      ingredient,
+      categorySlug,
+      tagSlug,
+      sortBy,
+      order,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.RecipeWhereInput = {
@@ -153,12 +189,14 @@ export class RecipesService {
       }),
     };
 
+    const orderBy = this.buildOrderBy(sortBy, order);
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.recipe.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           categories: { include: { category: { select: { id: true, name: true, slug: true } } } },
           tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
@@ -168,7 +206,14 @@ export class RecipesService {
               profile: { select: { username: true, avatarUrl: true } },
             },
           },
-          _count: { select: { ingredients: true, steps: true } },
+          _count: {
+            select: {
+              ingredients: true,
+              steps: true,
+              favoritedBy: true,
+              reviews: true,
+            },
+          },
         },
       }),
       this.prisma.recipe.count({ where }),
