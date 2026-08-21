@@ -17,6 +17,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { TagsModule } from './tags/tags.module';
     UploadsModule,
     CategoriesModule,
     TagsModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [
