@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -60,6 +61,18 @@ export class RecipesController {
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async findMyRecipes(@CurrentUser() user: CurrentUserData) {
     return this.recipesService.findMyRecipes(user);
+  }
+
+  @Public()
+  @Get(':id/similar')
+  @ApiOperation({ summary: 'Получение похожих рекомендаций к рецепту по категориям и тегам' })
+  @ApiOkResponse({ description: 'Список из 3-5 похожих опубликованных рецептов' })
+  @ApiNotFoundResponse({ description: 'Исходный рецепт не найден' })
+  async findSimilar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.recipesService.findSimilar(id, limit ? Math.min(Number(limit), 10) : 4);
   }
 
   /**

@@ -391,4 +391,65 @@ export class RecipesService {
       },
     });
   }
+
+  async findSimilar(recipeId: string, limit = 4) {
+    // 1. Получаем категории и теги исходного рецепта
+    const currentRecipe = await this.prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: {
+        id: true,
+        isPublished: true,
+        categories: { select: { categoryId: true } },
+        tags: { select: { tagId: true } },
+      },
+    });
+
+    if (!currentRecipe || !currentRecipe.isPublished) {
+      throw new NotFoundException('Рецепт не найден');
+    }
+
+    const categoryIds = currentRecipe.categories.map((c) => c.categoryId);
+    const tagIds = currentRecipe.tags.map((t) => t.tagId);
+
+    // 2. Ищем опубликованные рецепты с пересечением по категориям или тегам
+    return this.prisma.recipe.findMany({
+      where: {
+        id: { not: recipeId }, // Исключаем сам рецепт
+        isPublished: true,
+        OR: [
+          { categories: { some: { categoryId: { in: categoryIds } } } },
+          { tags: { some: { tagId: { in: tagIds } } } },
+        ],
+      },
+      take: limit,
+      orderBy: [
+        { averageRating: 'desc' },
+        { ratingsCount: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        coverImageUrl: true,
+        cookTime: true,
+        difficulty: true,
+        averageRating: true,
+        ratingsCount: true,
+        author: {
+          select: {
+            id: true,
+            profile: { select: { username: true, avatarUrl: true } },
+          },
+        },
+        categories: {
+          include: { category: { select: { id: true, name: true, slug: true } } },
+        },
+        tags: {
+          include: { tag: { select: { id: true, name: true, slug: true } } },
+        },
+      },
+    });
+  }
 }
