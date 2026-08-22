@@ -20,6 +20,8 @@ import { TagsModule } from './tags/tags.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HealthController } from './health/health.controller';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -58,6 +60,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     TagsModule,
     FavoritesModule,
     ReviewsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
