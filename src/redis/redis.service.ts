@@ -4,7 +4,7 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-  private readonly client: Redis;
+  private readonly redisClient: Redis; // переименовали для внутреннего использования
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private readonly configService: ConfigService) {
@@ -12,24 +12,31 @@ export class RedisService implements OnModuleDestroy {
     const port = this.configService.get<number>('REDIS_PORT', 6379);
     const password = this.configService.get<string>('REDIS_PASSWORD');
 
-    this.client = new Redis({
+    this.redisClient = new Redis({
       host,
       port,
       password: password || undefined,
       lazyConnect: false,
     });
 
-    this.client.on('connect', () => {
+    this.redisClient.on('connect', () => {
       this.logger.log(`Connected to Redis at ${host}:${port}`);
     });
 
-    this.client.on('error', (err) => {
+    this.redisClient.on('error', (err) => {
       this.logger.error('Redis connection error:', err);
     });
   }
 
+  /**
+   * Публичный геттер для прямого доступа к экземпляру Redis через `this.redis.client`
+   */
+  get client(): Redis {
+    return this.redisClient;
+  }
+
   async onModuleDestroy() {
-    await this.client.quit();
+    await this.redisClient.quit();
   }
 
   // --- Методы для Refresh Token & Sessions ---
@@ -44,7 +51,7 @@ export class RedisService implements OnModuleDestroy {
     ttlSeconds: number,
   ): Promise<void> {
     const key = `refresh_token:${userId}:${tokenId}`;
-    await this.client.set(key, 'valid', 'EX', ttlSeconds);
+    await this.redisClient.set(key, 'valid', 'EX', ttlSeconds);
   }
 
   /**
@@ -52,7 +59,7 @@ export class RedisService implements OnModuleDestroy {
    */
   async isRefreshTokenValid(userId: string, tokenId: string): Promise<boolean> {
     const key = `refresh_token:${userId}:${tokenId}`;
-    const result = await this.client.get(key);
+    const result = await this.redisClient.get(key);
     return result === 'valid';
   }
 
@@ -61,7 +68,7 @@ export class RedisService implements OnModuleDestroy {
    */
   async invalidateRefreshToken(userId: string, tokenId: string): Promise<void> {
     const key = `refresh_token:${userId}:${tokenId}`;
-    await this.client.del(key);
+    await this.redisClient.del(key);
   }
 
   /**
@@ -69,35 +76,34 @@ export class RedisService implements OnModuleDestroy {
    */
   async invalidateAllUserSessions(userId: string): Promise<void> {
     const pattern = `refresh_token:${userId}:*`;
-    const keys = await this.client.keys(pattern);
+    const keys = await this.redisClient.keys(pattern);
     if (keys.length > 0) {
-      await this.client.del(...keys);
+      await this.redisClient.del(...keys);
     }
   }
 
   /**
-   * Прямой доступ к экземпляру ioredis для кастомных операций
+   * Прямой доступ к экземпляру ioredis для обратной совместимости
    */
   getClient(): Redis {
-    return this.client;
+    return this.redisClient;
   }
 
   // Сохранение токена сброса (TTL обычно 15 минут / 900 сек)
-  async savePasswordResetToken(userId: string, token: string, ttlSeconds: number = 900): Promise<void> {
+  async savePasswordResetToken(userId: string, token: string, ttlSeconds = 900): Promise<void> {
     const key = `password_reset:${token}`;
-    await this.client.set(key, userId, 'EX', ttlSeconds);
+    await this.redisClient.set(key, userId, 'EX', ttlSeconds);
   }
 
   // Получение userId по токену сброса
   async getUserIdByPasswordResetToken(token: string): Promise<string | null> {
     const key = `password_reset:${token}`;
-    return this.client.get(key);
+    return this.redisClient.get(key);
   }
 
   // Удаление токена после успешного сброса
   async invalidatePasswordResetToken(token: string): Promise<void> {
     const key = `password_reset:${token}`;
-    await this.client.del(key);
+    await this.redisClient.del(key);
   }
 }
-

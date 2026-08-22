@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -28,11 +29,16 @@ import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { QueryRecipeDto } from './dto/query-recipe.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import type { Request } from 'express';
+import { RecipesViewService } from './recipes-view.service';
 
 @ApiTags('Recipes')
 @Controller('recipes')
 export class RecipesController {
-  constructor(private readonly recipesService: RecipesService) { }
+  constructor(
+    private readonly recipesService: RecipesService,
+    private readonly recipesViewService: RecipesViewService,
+  ) { }
 
   /**
    * 1. Публичный поиск и каталог опубликованных рецептов с пагинацией и фильтрами
@@ -87,9 +93,18 @@ export class RecipesController {
   @ApiForbiddenResponse({ description: 'Нет доступа к закрытому черновику' })
   async findBySlug(
     @Param('slug') slug: string,
+    @Req() req: Request,
     @CurrentUser() currentUser?: CurrentUserData,
   ) {
-    return this.recipesService.findBySlug(slug, currentUser);
+    const recipe = await this.recipesService.findBySlug(slug, currentUser);
+
+    // Определяем идентификатор клиента (ID авторизованного пользователя или IP)
+    const clientIdentifier = currentUser?.id || req.ip || req.socket.remoteAddress || 'anonymous';
+
+    // Инкремент в фоне, не блокируя отдачу ответа
+    this.recipesViewService.incrementView(recipe.id, clientIdentifier).catch(() => { });
+
+    return recipe;
   }
 
   /**

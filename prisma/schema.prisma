@@ -71,6 +71,7 @@ model Recipe {
   // Денормализованные метрики рейтинга для быстрой сортировки каталога
   averageRating Decimal @default(0.0) @map("average_rating") @db.Decimal(3, 2)
   ratingsCount  Int     @default(0) @map("ratings_count")
+  viewsCount    Int     @default(0) @map("views_count")
 
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -89,6 +90,7 @@ model Recipe {
 
   @@index([authorId])
   @@index([isPublished])
+  @@index([viewsCount(sort: Desc)])
   @@map("recipes")
 }
 
