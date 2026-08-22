@@ -40,7 +40,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: recipe_minio
+    container_name: recipe-blog-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -51,6 +51,12 @@ services:
       - '9001:9001' # Web Console
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - recipe-blog-net
 
