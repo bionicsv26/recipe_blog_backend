@@ -6,19 +6,16 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './uploads.service';
-import { multerOptions } from './uploads.constants';
 
 @ApiTags('Uploads')
 @ApiBearerAuth('JWT-auth')
@@ -26,13 +23,9 @@ import { multerOptions } from './uploads.constants';
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) { }
 
-  /**
-   * Загрузка одного изображения (обложки рецепта или фото шага)
-   * POST /uploads/image
-   */
   @Post('image')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Загрузка одиночного изображения (обложка, шаг или отзыв)' })
+  @ApiOperation({ summary: 'Загрузка и конвертация изображения в WebP в S3' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -45,11 +38,13 @@ export class UploadsController {
       },
     },
   })
-  @ApiOkResponse({ description: 'Изображение успешно сохранено, возвращен URL' })
-  @ApiBadRequestResponse({ description: 'Файл не передан или не соответствует разрешенным типам (PNG, JPEG, WEBP)' })
-  @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  @UseInterceptors(FileInterceptor('file', multerOptions))
-  uploadImage(@UploadedFile() file?: Express.Multer.File) {
-    return this.uploadsService.formatFileUrl(file);
+  @ApiOkResponse({ description: 'Изображение оптимизировано и загружено в S3' })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    return this.uploadsService.uploadImage(file, 'recipes');
   }
 }
