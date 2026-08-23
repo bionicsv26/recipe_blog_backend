@@ -22,10 +22,16 @@ export function setupSwagger(app: INestApplication): void {
     )
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  // 1. Создаем исходный документ Swagger
+  const rawDocument = SwaggerModule.createDocument(app, config);
 
-  // cleanupOpenApiDoc обрабатывает OpenAPI документ под схемы nestjs-zod v5
-  SwaggerModule.setup('docs', app, cleanupOpenApiDoc(document), {
+  // 2. Очищаем документ под спецификацию схем nestjs-zod
+  const document = cleanupOpenApiDoc(rawDocument);
+
+  // 3. Подключаем Swagger UI и регистрируем JSON/YAML эндпоинты
+  SwaggerModule.setup('docs', app, document, {
+    jsonDocumentUrl: 'docs-json',
+    yamlDocumentUrl: 'docs-yaml',
     swaggerOptions: {
       persistAuthorization: true,
     },
