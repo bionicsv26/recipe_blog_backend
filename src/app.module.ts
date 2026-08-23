@@ -22,6 +22,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthController } from './health/health.controller';
 import { HealthModule } from './health/health.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { HealthModule } from './health/health.module';
     FavoritesModule,
     ReviewsModule,
     HealthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
