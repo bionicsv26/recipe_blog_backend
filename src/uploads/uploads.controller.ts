@@ -3,6 +3,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import {
   ApiConsumes,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
@@ -27,6 +29,12 @@ export class UploadsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Загрузка и конвертация изображения в WebP в S3' })
   @ApiConsumes('multipart/form-data')
+  @ApiQuery({
+    name: 'folder',
+    required: false,
+    enum: ['temp', 'recipes', 'avatars', 'reviews'],
+    description: 'Целевая папка (по умолчанию temp)',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -44,7 +52,10 @@ export class UploadsController {
       limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadsService.uploadImage(file, 'recipes');
+  async uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('folder') folder?: 'temp' | 'recipes' | 'avatars' | 'reviews',
+  ) {
+    return this.uploadsService.uploadImage(file, folder || 'temp');
   }
 }
