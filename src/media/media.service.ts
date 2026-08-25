@@ -4,6 +4,8 @@ import {
   S3Client,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  ListObjectsV2Command,
+  _Object,
 } from '@aws-sdk/client-s3';
 
 @Injectable()
@@ -122,6 +124,43 @@ export class MediaService {
     } catch (error) {
       this.logger.error('Failed to batch delete files from S3/MinIO', error);
       return 0;
+    }
+  }
+
+  /**
+ * Возвращает список всех ключей объектов в бакете с датой их последнего изменения
+ */
+  async listAllObjects(): Promise<Array<{ key: string; lastModified?: Date }>> {
+    const objects: Array<{ key: string; lastModified?: Date }> = [];
+    let continuationToken: string | undefined = undefined;
+
+    try {
+      do {
+        const command: ListObjectsV2Command = new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          ContinuationToken: continuationToken,
+        });
+
+        const response = await this.s3Client.send(command);
+
+        if (response.Contents) {
+          response.Contents.forEach((item: _Object) => {
+            if (item.Key) {
+              objects.push({
+                key: item.Key,
+                lastModified: item.LastModified,
+              });
+            }
+          });
+        }
+
+        continuationToken = response.NextContinuationToken;
+      } while (continuationToken);
+
+      return objects;
+    } catch (error) {
+      this.logger.error('Failed to list objects in MinIO bucket', error);
+      return [];
     }
   }
 }
