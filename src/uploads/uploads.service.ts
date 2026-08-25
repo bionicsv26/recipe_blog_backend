@@ -23,6 +23,11 @@ export interface UploadResponse {
   height: number;
 }
 
+export interface UploadResult {
+  url: string;
+  key: string;
+}
+
 @Injectable()
 export class UploadsService implements OnModuleInit {
   private readonly s3Client: S3Client;
@@ -91,7 +96,7 @@ export class UploadsService implements OnModuleInit {
    */
   async uploadImage(
     file: Express.Multer.File,
-    folder: 'recipes' | 'avatars' | 'reviews' = 'recipes',
+    folder: 'temp' | 'recipes' | 'avatars' | 'reviews' = 'temp',
   ): Promise<UploadResponse> {
     if (!file || !file.buffer) {
       throw new BadRequestException('Файл не передан');
@@ -112,6 +117,7 @@ export class UploadsService implements OnModuleInit {
         .webp({ quality: 80 })
         .toBuffer();
 
+      // Сохраняем в temp/ по умолчанию
       const key = `${folder}/${randomUUID()}.webp`;
 
       await this.s3Client.send(
@@ -130,6 +136,9 @@ export class UploadsService implements OnModuleInit {
         height: metadata.height || 0,
       };
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Ошибка загрузки файла в S3', error);
       throw new InternalServerErrorException('Не удалось сохранить изображение');
     }

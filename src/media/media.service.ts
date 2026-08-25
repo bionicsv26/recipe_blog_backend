@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
+  CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -161,6 +162,52 @@ export class MediaService {
     } catch (error) {
       this.logger.error('Failed to list objects in MinIO bucket', error);
       return [];
+    }
+  }
+
+  /**
+   * Перемещает файл из временного хранилища (temp/) в постоянную директорию.
+   * Если файл уже не во временной папке или URL невалиден, возвращает исходное значение.
+   */
+  async moveToPermanent(
+    tempUrlOrKey: string,
+    targetFolder: 'recipes' | 'avatars' | 'steps',
+    entityId: string,
+  ): Promise<string> {
+    const sourceKey = this.extractKeyFromUrl(tempUrlOrKey);
+    if (!sourceKey || !sourceKey.startsWith('temp/')) {
+      return tempUrlOrKey;
+    }
+
+    const fileName = sourceKey.split('/').pop();
+    const destinationKey = `${targetFolder}/${entityId}/${fileName}`;
+
+    try {
+      // 1. Копируем файл в постоянное хранилище
+      await this.s3Client.send(
+        new CopyObjectCommand({
+          Bucket: this.bucketName,
+          CopySource: encodeURIComponent(`${this.bucketName}/${sourceKey}`),
+          Key: destinationKey,
+        }),
+      );
+
+      // 2. Удаляем временный исходник
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: sourceKey,
+        }),
+      );
+
+      this.logger.log(`Moved object from ${sourceKey} to ${destinationKey}`);
+      return `${this.publicUrl}/${destinationKey}`;
+    } catch (error) {
+      this.logger.error(
+        `Failed to move object from ${sourceKey} to ${destinationKey}`,
+        error,
+      );
+      return tempUrlOrKey;
     }
   }
 }

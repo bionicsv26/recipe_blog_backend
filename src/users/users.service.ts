@@ -31,37 +31,50 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Пользователь не найден');
     }
 
+    // 1. Проверка уникальности username при его смене
     if (dto.username && dto.username !== user.profile?.username) {
       const existingProfile = await this.prisma.profile.findUnique({
         where: { username: dto.username },
       });
 
       if (existingProfile && existingProfile.userId !== userId) {
-        throw new ConflictException('Username is already taken');
+        throw new ConflictException('Имя пользователя уже занято');
       }
     }
 
-    // Удаляем старый аватар при замене или очистке поля
+    let finalAvatarUrl = dto.avatarUrl;
     const oldAvatarUrl = user.profile?.avatarUrl;
-    if (oldAvatarUrl && dto.avatarUrl !== undefined && dto.avatarUrl !== oldAvatarUrl) {
+
+    // 2. Если передан новый URL из temp/, переносим в постоянную папку
+    if (dto.avatarUrl && dto.avatarUrl.includes('/temp/')) {
+      finalAvatarUrl = await this.mediaService.moveToPermanent(
+        dto.avatarUrl,
+        'avatars',
+        userId,
+      );
+    }
+
+    // 3. Если аватар был изменен или удален (null/undefined) — удаляем старый постоянный файл
+    if (oldAvatarUrl && dto.avatarUrl !== undefined && oldAvatarUrl !== finalAvatarUrl) {
       await this.mediaService.deleteFile(oldAvatarUrl);
     }
 
+    // 4. Обновление или создание профиля в БД
     const updatedProfile = await this.prisma.profile.upsert({
       where: { userId },
       create: {
         userId,
         username: dto.username || `user_${Date.now()}`,
         bio: dto.bio,
-        avatarUrl: dto.avatarUrl,
+        avatarUrl: finalAvatarUrl,
       },
       update: {
         ...(dto.username && { username: dto.username }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
-        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+        ...(dto.avatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
       },
     });
 
