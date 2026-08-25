@@ -1,10 +1,14 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { MediaService } from '../media/media.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaService: MediaService,
+  ) { }
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -40,20 +44,22 @@ export class UsersService {
       }
     }
 
+    // Удаляем старый аватар при замене или очистке поля
+    const oldAvatarUrl = user.profile?.avatarUrl;
+    if (oldAvatarUrl && dto.avatarUrl !== undefined && dto.avatarUrl !== oldAvatarUrl) {
+      await this.mediaService.deleteFile(oldAvatarUrl);
+    }
+
     const updatedProfile = await this.prisma.profile.upsert({
       where: { userId },
       create: {
         userId,
         username: dto.username || `user_${Date.now()}`,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
         bio: dto.bio,
         avatarUrl: dto.avatarUrl,
       },
       update: {
         ...(dto.username && { username: dto.username }),
-        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
-        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
       },
