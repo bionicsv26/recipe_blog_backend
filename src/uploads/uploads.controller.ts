@@ -1,7 +1,10 @@
 import {
   Controller,
+  FileTypeValidator,
   HttpCode,
   HttpStatus,
+  MaxFileSizeValidator,
+  ParseFilePipe,
   Post,
   Query,
   UploadedFile,
@@ -53,7 +56,14 @@ export class UploadsController {
     }),
   )
   async uploadImage(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|avif)$/ }),
+        ],
+      }),
+    ) file: Express.Multer.File,
     @Query('folder') folder?: 'temp' | 'recipes' | 'avatars' | 'reviews',
   ) {
     return this.uploadsService.uploadImage(file, folder || 'temp');

@@ -107,6 +107,10 @@ export class UploadsService implements OnModuleInit {
       throw new BadRequestException('Разрешены только форматы JPEG, PNG, WEBP, AVIF');
     }
 
+    if (!file?.buffer || file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('Некорректный размер файла (макс. 5 МБ)');
+    }
+
     try {
       // Конвертация в WebP и оптимизация
       const image = sharp(file.buffer);
