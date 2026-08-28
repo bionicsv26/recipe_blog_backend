@@ -6,7 +6,7 @@ import {
   InferSubjects,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { User, Recipe, Role } from '@prisma/client';
+import { User, Recipe, Review, Tag, Role } from '@prisma/client';
 
 export enum Action {
   Manage = 'manage',
@@ -16,12 +16,13 @@ export enum Action {
   Delete = 'delete',
 }
 
-// Передаем интерфейсы Prisma напрямую и указываем true (for interface mode)
 export type AppSubjects =
   | 'all'
   | 'Recipe'
   | 'User'
-  | InferSubjects<Recipe | User, true>;
+  | 'Review'
+  | 'Tag'
+  | InferSubjects<Recipe | User | Review | Tag, true>;
 
 export type AppAbility = MongoAbility<[Action, AppSubjects]>;
 
@@ -30,21 +31,59 @@ export class CaslAbilityFactory {
   createForUser(user: { id: string; role: Role }): AppAbility {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-    if (user.role === Role.ADMIN) {
-      can(Action.Manage, 'all');
-    } else if (user.role === Role.MODERATOR) {
-      can(Action.Read, 'all');
-      can(Action.Delete, 'Recipe');
-      can(Action.Update, 'Recipe', { authorId: user.id });
-    } else {
-      can(Action.Create, 'Recipe');
-      can(Action.Read, 'Recipe', { isPublished: true });
-      can(Action.Read, 'Recipe', { authorId: user.id });
-      can(Action.Update, 'Recipe', { authorId: user.id });
-      can(Action.Delete, 'Recipe', { authorId: user.id });
+    // 1. Базовые правила чтения для всех авторизованных ролей
+    can(Action.Read, 'Tag');
+    can(Action.Read, 'Review');
 
-      can(Action.Read, 'User', { id: user.id });
-      can(Action.Update, 'User', { id: user.id });
+    switch (user.role) {
+      case Role.ADMIN:
+        can(Action.Manage, 'all');
+        break;
+
+      case Role.MODERATOR:
+        can(Action.Read, 'all');
+        // Рецепты
+        can(Action.Create, 'Recipe');
+        can(Action.Delete, 'Recipe');
+        can(Action.Update, 'Recipe', { authorId: user.id });
+        // Профиль
+        can(Action.Read, 'User', { id: user.id });
+        can(Action.Update, 'User', { id: user.id });
+        // Теги и отзывы (модерация)
+        can(Action.Create, 'Tag');
+        can(Action.Delete, 'Tag');
+        can(Action.Create, 'Review');
+        can(Action.Delete, 'Review');
+        can(Action.Update, 'Review', { userId: user.id });
+        break;
+
+      case Role.CHEF:
+        // Рецепты
+        can(Action.Create, 'Recipe');
+        can(Action.Read, 'Recipe', { isPublished: true });
+        can(Action.Read, 'Recipe', { authorId: user.id });
+        can(Action.Update, 'Recipe', { authorId: user.id });
+        can(Action.Delete, 'Recipe', { authorId: user.id });
+        // Профиль
+        can(Action.Read, 'User', { id: user.id });
+        can(Action.Update, 'User', { id: user.id });
+        // Теги и отзывы
+        can(Action.Create, 'Tag');
+        can(Action.Create, 'Review');
+        can(Action.Update, 'Review', { userId: user.id });
+        can(Action.Delete, 'Review', { userId: user.id });
+        break;
+
+      case Role.USER:
+      default:
+        // Читатель: просмотр рецептов, управление своим профилем и своими отзывами
+        can(Action.Read, 'Recipe', { isPublished: true });
+        can(Action.Read, 'User', { id: user.id });
+        can(Action.Update, 'User', { id: user.id });
+        can(Action.Create, 'Review');
+        can(Action.Update, 'Review', { userId: user.id });
+        can(Action.Delete, 'Review', { userId: user.id });
+        break;
     }
 
     return build({
@@ -52,9 +91,14 @@ export class CaslAbilityFactory {
         if (!item || typeof item === 'string') {
           return item as ExtractSubjectType<AppSubjects>;
         }
-        return (item.constructor?.name === 'Object'
-          ? (item as any).__typename || 'Recipe'
-          : item.constructor.name) as ExtractSubjectType<AppSubjects>;
+        if ((item as any).__typename) {
+          return (item as any).__typename;
+        }
+        if ('prepTime' in item || 'authorId' in item) return 'Recipe';
+        if ('rating' in item || 'comment' in item) return 'Review';
+        if ('slug' in item && 'name' in item && !('cookTime' in item)) return 'Tag';
+        if ('email' in item) return 'User';
+        return item.constructor?.name as ExtractSubjectType<AppSubjects>;
       },
     });
   }
