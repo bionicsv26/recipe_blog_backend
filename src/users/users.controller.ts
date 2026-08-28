@@ -10,6 +10,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { CaslAbilityFactory } from '../casl/casl-ability.factory';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -23,7 +24,10 @@ export class UsersController {
 
   @Get('profile')
   @ApiOperation({ summary: 'Получение профиля текущего пользователя и правил CASL' })
-  @ApiOkResponse({ description: 'Данные профиля и массив правил авторизации' })
+  @ApiOkResponse({
+    description: 'Данные профиля и массив правил авторизации',
+    type: UserProfileResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async getProfile(@Req() req: { user: { id: string; role: any } }) {
     const user = await this.usersService.getProfile(req.user.id);
@@ -41,7 +45,10 @@ export class UsersController {
 
   @Patch('profile')
   @ApiOperation({ summary: 'Обновление данных профиля' })
-  @ApiOkResponse({ description: 'Профиль успешно обновлен' })
+  @ApiOkResponse({
+    description: 'Профиль успешно обновлен',
+    type: UserProfileResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async updateProfile(
     @Req() req: { user: { id: string } },
