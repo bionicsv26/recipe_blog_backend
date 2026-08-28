@@ -17,11 +17,12 @@ export class PoliciesGuard implements CanActivate {
   ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // getAllAndOverride проверяет метод, а если там пусто — берет политику уровня контроллера
     const policyHandlers =
-      this.reflector.get<PolicyHandler[]>(
-        CHECK_POLICIES_KEY,
+      this.reflector.getAllAndOverride<PolicyHandler[]>(CHECK_POLICIES_KEY, [
         context.getHandler(),
-      ) || [];
+        context.getClass(),
+      ]) || [];
 
     if (policyHandlers.length === 0) {
       return true;
