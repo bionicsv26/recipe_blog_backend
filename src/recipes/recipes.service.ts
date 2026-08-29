@@ -266,9 +266,9 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto, user: CurrentUserData) {
+    // Достаем только сам рецепт без тяжелых relation-запросов
     const recipe = await this.prisma.recipe.findUnique({
       where: { id },
-      include: { ingredients: true, steps: true },
     });
 
     if (!recipe) {
@@ -359,6 +359,13 @@ export class RecipesService {
           steps: { orderBy: { stepNumber: 'asc' } },
           categories: { include: { category: true } },
           tags: { include: { tag: true } },
+          author: {
+            select: {
+              id: true,
+              email: true,
+              profile: { select: { username: true, avatarUrl: true } },
+            },
+          },
         },
       });
     });

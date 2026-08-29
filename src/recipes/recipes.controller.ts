@@ -11,6 +11,7 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -31,6 +32,10 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
 import type { Request } from 'express';
 import { RecipesViewService } from './recipes-view.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PoliciesGuard } from '../casl/guards/policies.guard';
+import { CheckPolicies } from '../casl/decorators/check-policies.decorator';
+import { Action, AppAbility } from '../casl/casl-ability.factory';
 
 @ApiTags('Recipes')
 @Controller('recipes')
@@ -112,6 +117,8 @@ export class RecipesController {
    * POST /recipes
    */
   @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Create, 'Recipe'))
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создание нового рецепта' })
