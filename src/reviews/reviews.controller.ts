@@ -41,7 +41,7 @@ export class ReviewsController {
   @ApiOkResponse({ description: 'Список отзывов с пагинацией' })
   @ApiBadRequestResponse({ description: 'Некорректный UUID рецепта' })
   async findByRecipe(
-    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+    @Param('recipeId', new ParseUUIDPipe()) recipeId: string,
     @Query() query: QueryReviewsDto,
   ) {
     return this.reviewsService.findByRecipe(recipeId, query);
@@ -57,10 +57,11 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Создание или обновление своего отзыва к рецепту' })
   @ApiOkResponse({ description: 'Отзыв сохранен и рейтинг рецепта пересчитан' })
   @ApiBadRequestResponse({ description: 'Автор не может оценивать свой рецепт или ошибка валидации' })
+  @ApiForbiddenResponse({ description: 'Недостаточно прав для выполнения действия' })
   @ApiNotFoundResponse({ description: 'Рецепт не найден' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async createOrUpdate(
-    @Param('recipeId', ParseUUIDPipe) recipeId: string,
+    @Param('recipeId', new ParseUUIDPipe()) recipeId: string,
     @Body() dto: CreateReviewDto,
     @CurrentUser() user: CurrentUserData,
   ) {
@@ -80,7 +81,7 @@ export class ReviewsController {
   @ApiNotFoundResponse({ description: 'Отзыв не найден' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async remove(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserData,
   ) {
     return this.reviewsService.remove(id, user);
