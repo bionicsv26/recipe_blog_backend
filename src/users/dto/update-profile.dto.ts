@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createZodDto } from 'nestjs-zod';
 
 export const UpdateProfileSchema = z.object({
   username: z
@@ -15,4 +16,4 @@ export const UpdateProfileSchema = z.object({
   avatarUrl: z.url().nullable().optional(),
 });
 
-export type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
+export class UpdateProfileDto extends createZodDto(UpdateProfileSchema) { }

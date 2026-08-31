@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -9,51 +11,107 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { CaslAbilityFactory } from '../casl/casl-ability.factory';
-import type { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Users')
-@ApiBearerAuth('JWT-auth')
 @Controller('users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
-  @Get('profile')
+  /**
+   * Публичный профиль
+   * GET /users/:id/public
+   */
+  @Public()
+  @Get(':id/public')
+  @ApiOperation({ summary: 'Получение публичного профиля автора/пользователя' })
+  @ApiOkResponse({ description: 'Публичная информация' })
+  @ApiNotFoundResponse({ description: 'Пользователь не найден' })
+  async getPublicProfile(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.usersService.getPublicProfile(id);
+  }
+
+  /**
+   * Свой профиль
+   * GET /users/me
+   */
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
   @ApiOperation({ summary: 'Получение профиля текущего пользователя и правил CASL' })
   @ApiOkResponse({
     description: 'Данные профиля и массив правил авторизации',
     type: UserProfileResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  async getProfile(@Req() req: { user: { id: string; role: any } }) {
-    const user = await this.usersService.getProfile(req.user.id);
-
-    const ability = this.caslAbilityFactory.createForUser({
-      id: user.id,
-      role: user.role,
-    });
+  async getMyProfile(@CurrentUser() user: CurrentUserData) {
+    const profileData = await this.usersService.getProfile(user.id, user);
+    const ability = this.caslAbilityFactory.createForUser(user);
 
     return {
-      ...user,
+      ...profileData,
       rules: ability.rules,
     };
   }
 
-  @Patch('profile')
-  @ApiOperation({ summary: 'Обновление данных профиля' })
+  /**
+   * Обновление своего профиля
+   * PATCH /users/me
+   */
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  @ApiOperation({ summary: 'Обновление данных своего профиля' })
   @ApiOkResponse({
     description: 'Профиль успешно обновлен',
     type: UserProfileResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  async updateProfile(
-    @Req() req: { user: { id: string } },
+  async updateMyProfile(
+    @CurrentUser() user: CurrentUserData,
     @Body() dto: UpdateProfileDto,
   ) {
-    return this.usersService.updateProfile(req.user.id, dto);
+    return this.usersService.updateProfile(user.id, dto, user);
+  }
+
+  /**
+   * Чужой профиль (ADMIN/MODERATOR)
+   * GET /users/:id
+   */
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  @ApiOperation({ summary: 'Получение приватного профиля по ID (Модератор/Админ)' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiForbiddenResponse({ description: 'Недостаточно прав' })
+  async getUserProfile(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.usersService.getProfile(id, user);
+  }
+
+  /**
+   * Обновление чужого профиля (ADMIN)
+   * PATCH /users/:id
+   */
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  @ApiOperation({ summary: 'Обновление чужого профиля по ID (Админ)' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiForbiddenResponse({ description: 'Недостаточно прав' })
+  async updateUserProfile(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateProfileDto,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    return this.usersService.updateProfile(id, dto, user);
   }
 }
