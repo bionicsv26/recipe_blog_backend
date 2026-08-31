@@ -6,7 +6,7 @@ import {
   InferSubjects,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { User, Recipe, Review, Tag, Role } from '@prisma/client';
+import { User, Recipe, Review, Tag, Category, Role } from '@prisma/client';
 
 export enum Action {
   Manage = 'manage',
@@ -22,7 +22,8 @@ export type AppSubjects =
   | 'User'
   | 'Review'
   | 'Tag'
-  | InferSubjects<Recipe | User | Review | Tag, true>;
+  | 'Category'
+  | InferSubjects<Recipe | User | Review | Tag | Category, true>;
 
 export type AppAbility = MongoAbility<[Action, AppSubjects]>;
 
@@ -31,7 +32,8 @@ export class CaslAbilityFactory {
   createForUser(user: { id: string; role: Role }): AppAbility {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
-    // 1. Базовые правила чтения для всех авторизованных ролей
+    // Базовый публичный доступ на чтение справочников
+    can(Action.Read, 'Category');
     can(Action.Read, 'Tag');
     can(Action.Read, 'Review');
 
@@ -42,32 +44,27 @@ export class CaslAbilityFactory {
 
       case Role.MODERATOR:
         can(Action.Read, 'all');
-        // Рецепты
         can(Action.Create, 'Recipe');
         can(Action.Delete, 'Recipe');
         can(Action.Update, 'Recipe', { authorId: user.id });
-        // Профиль
         can(Action.Read, 'User', { id: user.id });
         can(Action.Update, 'User', { id: user.id });
-        // Теги и отзывы (модерация)
         can(Action.Create, 'Tag');
         can(Action.Delete, 'Tag');
         can(Action.Create, 'Review');
         can(Action.Delete, 'Review');
         can(Action.Update, 'Review', { userId: user.id });
+        can(Action.Create, 'Category');
         break;
 
       case Role.CHEF:
-        // Рецепты
         can(Action.Create, 'Recipe');
         can(Action.Read, 'Recipe', { isPublished: true });
         can(Action.Read, 'Recipe', { authorId: user.id });
         can(Action.Update, 'Recipe', { authorId: user.id });
         can(Action.Delete, 'Recipe', { authorId: user.id });
-        // Профиль
         can(Action.Read, 'User', { id: user.id });
         can(Action.Update, 'User', { id: user.id });
-        // Теги и отзывы
         can(Action.Create, 'Tag');
         can(Action.Create, 'Review');
         can(Action.Update, 'Review', { userId: user.id });
@@ -76,7 +73,6 @@ export class CaslAbilityFactory {
 
       case Role.USER:
       default:
-        // Читатель: просмотр рецептов, управление своим профилем и своими отзывами
         can(Action.Read, 'Recipe', { isPublished: true });
         can(Action.Read, 'User', { id: user.id });
         can(Action.Update, 'User', { id: user.id });
@@ -96,6 +92,7 @@ export class CaslAbilityFactory {
         }
         if ('prepTime' in item || 'authorId' in item) return 'Recipe';
         if ('rating' in item || 'comment' in item) return 'Review';
+        if ('slug' in item && 'order' in item) return 'Category';
         if ('slug' in item && 'name' in item && !('cookTime' in item)) return 'Tag';
         if ('email' in item) return 'User';
         return item.constructor?.name as ExtractSubjectType<AppSubjects>;
