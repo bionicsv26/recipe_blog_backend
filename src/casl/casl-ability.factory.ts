@@ -6,7 +6,7 @@ import {
   InferSubjects,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { User, Recipe, Review, Tag, Category, Role } from '@prisma/client';
+import { User, Recipe, Review, Tag, Category, Favorite, Role } from '@prisma/client';
 
 export enum Action {
   Manage = 'manage',
@@ -23,7 +23,8 @@ export type AppSubjects =
   | 'Review'
   | 'Tag'
   | 'Category'
-  | InferSubjects<Recipe | User | Review | Tag | Category, true>;
+  | 'Favorite'
+  | InferSubjects<Recipe | User | Review | Tag | Category | Favorite, true>;
 
 export type AppAbility = MongoAbility<[Action, AppSubjects]>;
 
@@ -55,6 +56,9 @@ export class CaslAbilityFactory {
         can(Action.Delete, 'Review');
         can(Action.Update, 'Review', { userId: user.id });
         can(Action.Create, 'Category');
+        can(Action.Create, 'Favorite');
+        can(Action.Read, 'Favorite', { userId: user.id });
+        can(Action.Delete, 'Favorite', { userId: user.id });
         break;
 
       case Role.CHEF:
@@ -69,6 +73,9 @@ export class CaslAbilityFactory {
         can(Action.Create, 'Review');
         can(Action.Update, 'Review', { userId: user.id });
         can(Action.Delete, 'Review', { userId: user.id });
+        can(Action.Create, 'Favorite');
+        can(Action.Read, 'Favorite', { userId: user.id });
+        can(Action.Delete, 'Favorite', { userId: user.id });
         break;
 
       case Role.USER:
@@ -79,6 +86,9 @@ export class CaslAbilityFactory {
         can(Action.Create, 'Review');
         can(Action.Update, 'Review', { userId: user.id });
         can(Action.Delete, 'Review', { userId: user.id });
+        can(Action.Create, 'Favorite');
+        can(Action.Read, 'Favorite', { userId: user.id });
+        can(Action.Delete, 'Favorite', { userId: user.id });
         break;
     }
 
@@ -93,6 +103,7 @@ export class CaslAbilityFactory {
         if ('prepTime' in item || 'authorId' in item) return 'Recipe';
         if ('rating' in item || 'comment' in item) return 'Review';
         if ('slug' in item && 'order' in item) return 'Category';
+        if ('recipeId' in item && 'userId' in item && !('rating' in item)) return 'Favorite';
         if ('slug' in item && 'name' in item && !('cookTime' in item)) return 'Tag';
         if ('email' in item) return 'User';
         return item.constructor?.name as ExtractSubjectType<AppSubjects>;
