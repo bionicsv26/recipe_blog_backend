@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -15,6 +16,8 @@ import {
 } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
+import { CaslAbilityFactory, Action } from '../casl/casl-ability.factory';
+import type { CurrentUserData } from '../common/decorators/current-user.decorator';
 
 export interface UploadResponse {
   url: string;
@@ -35,7 +38,10 @@ export class UploadsService implements OnModuleInit {
   private readonly publicUrl: string;
   private readonly logger = new Logger(UploadsService.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly caslAbilityFactory: CaslAbilityFactory,
+  ) {
     this.bucketName = this.configService.get<string>('S3_BUCKET_NAME', 'recipe-media');
     this.publicUrl = this.configService.get<string>(
       'S3_PUBLIC_URL',
@@ -49,7 +55,7 @@ export class UploadsService implements OnModuleInit {
         accessKeyId: this.configService.get<string>('S3_ACCESS_KEY', 'minioadmin'),
         secretAccessKey: this.configService.get<string>('S3_SECRET_KEY', 'minioadmin'),
       },
-      forcePathStyle: true, // Обязательно для MinIO / LocalStack
+      forcePathStyle: true,
     });
   }
 
@@ -58,7 +64,7 @@ export class UploadsService implements OnModuleInit {
   }
 
   /**
-   * Проверка и авто-создание бакета с публичным доступом на чтение
+   * Проверка и создание бакета с публичным доступом на чтение
    */
   private async ensureBucketExists(): Promise<void> {
     try {
@@ -67,7 +73,6 @@ export class UploadsService implements OnModuleInit {
       this.logger.warn(`Бакет "${this.bucketName}" не найден. Создание...`);
       await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucketName }));
 
-      // Политика публичного чтения для изображений
       const policy = {
         Version: '2012-10-17',
         Statement: [
@@ -92,12 +97,27 @@ export class UploadsService implements OnModuleInit {
   }
 
   /**
-   * Оптимизация изображения и загрузка в S3
+   * Оптимизация изображения и сохранение в S3 с проверкой CASL
    */
   async uploadImage(
     file: Express.Multer.File,
-    folder: 'temp' | 'recipes' | 'avatars' | 'reviews' = 'temp',
+    folder: 'temp' | 'recipes' | 'avatars' | 'reviews',
+    user: CurrentUserData,
   ): Promise<UploadResponse> {
+    const ability = this.caslAbilityFactory.createForUser(user);
+
+    if (ability.cannot(Action.Create, 'Upload')) {
+      throw new ForbiddenException('У вас нет прав для загрузки медиафайлов');
+    }
+
+    // Обычный пользователь может загружать только во временную директорию или аватары
+    if (
+      (folder === 'recipes' || folder === 'reviews') &&
+      ability.cannot(Action.Manage, 'Upload')
+    ) {
+      throw new ForbiddenException('Прямая загрузка в данный каталог запрещена');
+    }
+
     if (!file || !file.buffer) {
       throw new BadRequestException('Файл не передан');
     }
@@ -107,12 +127,11 @@ export class UploadsService implements OnModuleInit {
       throw new BadRequestException('Разрешены только форматы JPEG, PNG, WEBP, AVIF');
     }
 
-    if (!file?.buffer || file.size > 5 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       throw new BadRequestException('Некорректный размер файла (макс. 5 МБ)');
     }
 
     try {
-      // Конвертация в WebP и оптимизация
       const image = sharp(file.buffer);
       const metadata = await image.metadata();
 
@@ -121,7 +140,6 @@ export class UploadsService implements OnModuleInit {
         .webp({ quality: 80 })
         .toBuffer();
 
-      // Сохраняем в temp/ по умолчанию
       const key = `${folder}/${randomUUID()}.webp`;
 
       await this.s3Client.send(
@@ -140,7 +158,7 @@ export class UploadsService implements OnModuleInit {
         height: metadata.height || 0,
       };
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      if (error instanceof BadRequestException || error instanceof ForbiddenException) {
         throw error;
       }
       this.logger.error('Ошибка загрузки файла в S3', error);
