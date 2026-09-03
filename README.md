@@ -1,98 +1,161 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Recipe Blog Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+RESTful API сервис для кулинарного блога с поддержкой авторизации, управления рецептами, категориями, тегами, избранным, отзывами и загрузкой медиафайлов.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Технологический стек
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* **Runtime & Framework:** Node.js, NestJS
+* **Database & ORM:** PostgreSQL, Prisma ORM
+* **Cache & Sessions:** Redis
+* **Storage (S3):** MinIO / AWS S3 SDK (`@aws-sdk/client-s3`), Sharp (оптимизация изображений в WebP)
+* **Auth & Security:** JWT (Access & Refresh tokens), Argon2, CASL (`@casl/ability` для RBAC/ABAC)
+* **Validation & DTO:** Zod, `nestjs-zod`
+* **Documentation:** Swagger / OpenAPI
+* **Testing:** Jest, Supertest
 
-## Project setup
+---
 
-```bash
-$ npm install
-```
+## Архитектура ролей и прав (CASL)
 
-## Compile and run the project
+В системе реализовано разграничение доступа на базе ролей и атрибутов (RBAC/ABAC):
 
-```bash
-# development
-$ npm run start
+* **USER**: чтение опубликованных рецептов, создание и редактирование своих отзывов, управление своим списком избранного, загрузка аватара и временных файлов (`temp`).
+* **CHEF**: создание и редактирование собственных рецептов/черновиков, добавление тегов, прямое управление медиафайлами рецептов.
+* **MODERATOR**: модерация и удаление любых рецептов и отзывов, управление тегами, создание категорий.
+* **ADMIN**: полный доступ ко всем ресурсам (`manage: all`), управление ролями пользователей, удаление файлов из S3.
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
-```
+## Предварительные требования
 
-## Run tests
+* **Node.js**: `>= 20.x`
+* **Docker & Docker Compose** (для локального запуска PostgreSQL, Redis и MinIO)
+* **pnpm** / **npm** / **yarn**
+
+---
+
+## Быстрый старт
+
+### 1. Клонирование репозитория и установка зависимостей
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+git clone <repository-url>
+cd recipe-blog-backend
+npm install
 ```
 
-## Deployment
+### 2. Настройка переменных окружения
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Создайте файл .env в корневой директории на основе примера:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+```env
+# Server
+NODE_ENV=development
+
+# Database (PostgreSQL)
+POSTGRES_USER=root
+POSTGRES_PASSWORD=123456789
+POSTGRES_HOST=localhost
+POSTGRES_DB=recipe-blog
+POSTGRES_PORT=5434
+POSTGRES_URI="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public"
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=876543210
+
+# JWT Secrets
+JWT_ACCESS_SECRET="your-super-secret-access-key-change-in-production"
+JWT_ACCESS_EXPIRATION=900
+
+JWT_REFRESH_SECRET="your-super-secret-refresh-key-change-in-production"
+JWT_REFRESH_EXPIRATION=604800
+
+# Mail configuration (SMTP)
+SMTP_HOST=smtp.mail.ru
+SMTP_PORT=465
+SMTP_USER=свой_адрес@mail.ru
+SMTP_PASSWORD=5MhTOVXKqoV3eKAhmkpK265
+SMTP_FROM="Recipe Blog <свой_адрес@mail.ru>"
+FRONTEND_URL="http://localhost:5173"
+
+# S3 / MinIO Storage
+S3_ENDPOINT=http://localhost:9000
+S3_REGION=us-east-1
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET_NAME=recipe-media
+S3_PUBLIC_URL=http://localhost:9000/recipe-media
+```
+
+### 3. Запуск инфраструктуры (Docker)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker-compose --profile with-redis up -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 4. Применение миграций базы данных
 
-## Resources
+```bash
+# Генерация Prisma Client
+npx prisma generate
+# Применение миграций к БД
+npx prisma migrate dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 5. Запуск приложения
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+# Режим разработки
+npm run start:dev
 
-## Support
+# Продакшн сборка
+npm run build
+npm run start:prod
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## API Документация (Swagger)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+После запуска сервера интерактивная документация Swagger доступна по адресу:
 
-## License
+<http://localhost:3000/api/docs>
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+
+## Структура модулей
+
+```
+src/
+├── auth/            # Аутентификация, JWT стратегии, Redis сессии
+├── casl/            # Фабрика правил доступа (CaslAbilityFactory, PoliciesGuard)
+├── categories/      # Категории блюд (CRUD, slugify, иерархия)
+├── common/          # Декораторы (@CurrentUser, @Public), интерцепторы, утилиты
+├── favorites/       # Закладки и избранные рецепты
+├── media/           # Вспомогательный сервис работы с S3/MinIO
+├── prisma/          # Модуль подключения и сервиса Prisma ORM
+├── recipes/         # Управление рецептами, шагами, ингредиентами
+├── reviews/         # Отзывы и рейтинги к рецептам
+├── tags/            # Теги и автодополнение
+├── uploads/         # Обработка и конвертация изображений через Sharp в S3
+└── users/           # Управление профилями и ролями пользователей
+```
+
+---
+
+## Тестирование (в проекте)
+
+```bash
+# Запуск unit-тестов
+npm run test
+
+# Запуск e2e тестов
+npm run test:e2e
+
+# Покрытие тестами
+npm run test:cov
+```
