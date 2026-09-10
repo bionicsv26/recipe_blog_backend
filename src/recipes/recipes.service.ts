@@ -124,26 +124,24 @@ export class RecipesService {
 
   private buildOrderBy(
     sortBy: string,
-    order: 'asc' | 'desc',
+    sortOrder: 'asc' | 'desc',
   ): Prisma.RecipeOrderByWithRelationInput[] {
     switch (sortBy) {
       case RecipeSortBy.RATING:
         return [
-          { averageRating: order },
+          { averageRating: sortOrder },
           { ratingsCount: 'desc' }, // tie-breaker: при равном рейтинге выше тот, где больше оценок
         ];
       case RecipeSortBy.POPULAR:
         return [
-          { favoritedBy: { _count: order } },
-          { ratingsCount: order },
+          { favoritedBy: { _count: sortOrder } },
+          { ratingsCount: sortOrder },
         ];
       case RecipeSortBy.COOK_TIME:
-        return [{ cookTime: order }];
-      case RecipeSortBy.OLDEST:
-        return [{ createdAt: 'asc' }];
-      case RecipeSortBy.NEWEST:
+        return [{ cookTime: sortOrder }];
+      case RecipeSortBy.CREATED_AT:
       default:
-        return [{ createdAt: order }];
+        return [{ createdAt: sortOrder }];
     }
   }
 
@@ -158,7 +156,7 @@ export class RecipesService {
       categorySlug,
       tagSlug,
       sortBy,
-      order,
+      sortOrder,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -189,7 +187,7 @@ export class RecipesService {
       }),
     };
 
-    const orderBy = this.buildOrderBy(sortBy, order);
+    const orderBy = this.buildOrderBy(sortBy, sortOrder);
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.recipe.findMany({
@@ -266,7 +264,6 @@ export class RecipesService {
   }
 
   async update(id: string, dto: UpdateRecipeDto, user: CurrentUserData) {
-    // Достаем только сам рецепт без тяжелых relation-запросов
     const recipe = await this.prisma.recipe.findUnique({
       where: { id },
     });
@@ -400,7 +397,6 @@ export class RecipesService {
   }
 
   async findSimilar(recipeId: string, limit = 4) {
-    // 1. Получаем категории и теги исходного рецепта
     const currentRecipe = await this.prisma.recipe.findUnique({
       where: { id: recipeId },
       select: {
@@ -418,10 +414,9 @@ export class RecipesService {
     const categoryIds = currentRecipe.categories.map((c) => c.categoryId);
     const tagIds = currentRecipe.tags.map((t) => t.tagId);
 
-    // 2. Ищем опубликованные рецепты с пересечением по категориям или тегам
     return this.prisma.recipe.findMany({
       where: {
-        id: { not: recipeId }, // Исключаем сам рецепт
+        id: { not: recipeId },
         isPublished: true,
         OR: [
           { categories: { some: { categoryId: { in: categoryIds } } } },
