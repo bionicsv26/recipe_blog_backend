@@ -23,7 +23,7 @@ import {
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { ChangePasswordDto, LoginDto, RegisterDto } from './dto/auth.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
@@ -136,6 +136,23 @@ export class AuthController {
   @ApiNotFoundResponse({ description: 'Токен сброса пароля недействителен или истек' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  @ApiOperation({ summary: 'Смена пароля авторизованного пользователя' })
+  @ApiOkResponse({ description: 'Пароль успешно изменен' })
+  @ApiBadRequestResponse({ description: 'Неверный текущий пароль или ошибка валидации' })
+  @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(userId, dto);
+    return { message: 'Пароль успешно изменен' };
   }
 
   private setRefreshTokenCookie(res: Response, token: string) {

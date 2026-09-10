@@ -15,7 +15,7 @@ import { RedisService } from '../redis/redis.service';
 import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
 import { AuthTokens } from './interfaces/tokens.interface';
 import { Role } from '@prisma/client';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { ChangePasswordDto, LoginDto, RegisterDto } from './dto/auth.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { MailService } from '../mail/mail.service';
 
@@ -167,6 +167,28 @@ export class AuthService {
     await this.redisService.invalidateAllUserSessions(userId);
 
     return { message: 'Password has been reset successfully. Please log in with your new password.' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Пользователь не найден');
+    }
+
+    const isPasswordValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Неверный текущий пароль');
+    }
+
+    const newPasswordHash = await argon2.hash(dto.newPassword);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
   }
 
   private async generateAndSaveTokens(
