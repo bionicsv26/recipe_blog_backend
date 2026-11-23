@@ -68,6 +68,11 @@ services:
         condition: service_healthy
     networks:
       - recipe-blog-net
+    # [MEDIA-01] ILM-правило на temp/ намеренно НЕ создаётся.
+    # На объекты в temp/ есть живые ссылки в БД (обложки рецептов, фото шагов
+    # и отзывов): moveToPermanent для них не вызывается. Хранилище не знает
+    # о БД, поэтому ретенция на уровне ILM уничтожала используемые файлы.
+    # Ретенция сирот — только на стороне приложения (MediaCleanupService).
     entrypoint: >
       /bin/sh -c "
       echo 'Подключение к MinIO...';
@@ -79,14 +84,13 @@ services:
       echo 'Установка публичной политики чтения (download)...';
       /usr/bin/mc anonymous set download myminio/${S3_BUCKET_NAME};
 
-      echo 'Сброс старых ILM правил...';
+      echo 'Снятие ILM-правил (ретенция только на стороне приложения)...';
       /usr/bin/mc ilm rule remove --all --force myminio/${S3_BUCKET_NAME} || true;
 
-      echo 'Добавление правила автоудаления для папки temp/ (1 день)...';
-      /usr/bin/mc ilm rule add myminio/${S3_BUCKET_NAME} --prefix 'temp/' --expire-days 1;
-
-      echo 'Список активных правил Lifecycle:';
+      echo 'Список активных правил Lifecycle (ожидается пусто):';
       /usr/bin/mc ilm rule list myminio/${S3_BUCKET_NAME};
+
+      echo '(сообщение об отсутствии lifecycle-конфигурации = правил нет, это ожидаемо)';
 
       echo 'Инициализация MinIO завершена.';
       exit 0;
