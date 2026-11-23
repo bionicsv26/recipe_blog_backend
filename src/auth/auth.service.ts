@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
@@ -196,7 +195,7 @@ export class AuthService {
     email: string,
     role: Role,
   ): Promise<AuthTokens> {
-    const tokenId = uuidv4();
+    const tokenId = crypto.randomUUID();
     const payload: JwtPayload = { sub: userId, email, role };
     const refreshPayload: JwtRefreshPayload = { ...payload, jti: tokenId };
 
