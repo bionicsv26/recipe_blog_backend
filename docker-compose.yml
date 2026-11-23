@@ -11,6 +11,7 @@ services:
       - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -33,6 +34,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - recipe-blog-net
+    
+  redis-test:
+    image: redis:7.4-alpine
+    container_name: recipe-blog-redis-test
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    profiles: [test]
     networks:
       - recipe-blog-net
 
@@ -89,6 +105,10 @@ services:
 
       echo 'Создание бакета ${S3_BUCKET_NAME}...';
       /usr/bin/mc mb --ignore-existing myminio/${S3_BUCKET_NAME};
+
+      echo 'Создание тестового бакета...';
+      /usr/bin/mc mb --ignore-existing myminio/${S3_TEST_BUCKET_NAME:-recipe-media-test};
+      /usr/bin/mc anonymous set download myminio/${S3_TEST_BUCKET_NAME:-recipe-media-test};
 
       echo 'Установка публичной политики чтения (download)...';
       /usr/bin/mc anonymous set download myminio/${S3_BUCKET_NAME};

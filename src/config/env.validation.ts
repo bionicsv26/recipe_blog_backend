@@ -58,4 +58,5 @@ export const envValidationSchema = Joi.object({
   // Строка, не boolean: MediaService сравнивает значение со строкой 'true'.
   // Перевод в boolean — только вместе с правкой MediaService (PR9).
   S3_USE_SSL: Joi.string().valid('true', 'false').default('false'),
+  S3_TEST_BUCKET_NAME: Joi.string().default('recipe-media-test'),
 });
