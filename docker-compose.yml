@@ -33,8 +33,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    profiles:
-      - with-redis
+    networks:
+      - recipe-blog-net
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: recipe-blog-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    profiles: [test]
     networks:
       - recipe-blog-net
 
