@@ -33,7 +33,7 @@ export class MediaCleanupService {
       }
 
       // 2. Собираем все используемые URL из базы данных
-      const [profiles, recipes, steps] = await Promise.all([
+      const [profiles, recipes, steps, categories, recipeImages, reviewImages] = await Promise.all([
         this.prisma.profile.findMany({
           where: { avatarUrl: { not: null } },
           select: { avatarUrl: true },
@@ -45,6 +45,16 @@ export class MediaCleanupService {
         this.prisma.recipeStep.findMany({
           where: { imageUrl: { not: null } },
           select: { imageUrl: true },
+        }),
+        this.prisma.category.findMany({
+          where: { imageUrl: { not: null } },
+          select: { imageUrl: true },
+        }),
+        this.prisma.recipeImage.findMany({
+          select: { url: true },
+        }),
+        this.prisma.reviewImage.findMany({
+          select: { url: true },
         }),
       ]);
 
@@ -62,6 +72,21 @@ export class MediaCleanupService {
 
       steps.forEach((s) => {
         const key = this.mediaService.extractKeyFromUrl(s.imageUrl!);
+        if (key) usedKeys.add(key);
+      });
+
+      categories.forEach((c) => {
+        const key = this.mediaService.extractKeyFromUrl(c.imageUrl!);
+        if (key) usedKeys.add(key);
+      });
+
+      recipeImages.forEach((img) => {
+        const key = this.mediaService.extractKeyFromUrl(img.url);
+        if (key) usedKeys.add(key);
+      });
+
+      reviewImages.forEach((img) => {
+        const key = this.mediaService.extractKeyFromUrl(img.url);
         if (key) usedKeys.add(key);
       });
 
