@@ -1,23 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ZodValidationPipe } from 'nestjs-zod';
-import cookieParser from 'cookie-parser';
+import { configureApp } from './bootstrap';
 import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Middleware
-  app.use(cookieParser());
-
-  // Глобальная валидация DTO через Zod
-  app.useGlobalPipes(new ZodValidationPipe());
-
-  // Настройка CORS для взаимодействия с Vue 3
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  configureApp(app);
 
   // Swagger документация
   setupSwagger(app);
