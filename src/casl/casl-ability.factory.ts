@@ -45,7 +45,7 @@ export interface AbilityUser {
 @Injectable()
 export class CaslAbilityFactory {
   createForUser(user: AbilityUser): AppAbility {
-    const { can, cannot, build } = new AbilityBuilder<AppAbility>(
+    const { can, build } = new AbilityBuilder<AppAbility>(
       createMongoAbility,
     );
 

@@ -8,7 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -32,7 +32,7 @@ import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })

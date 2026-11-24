@@ -20,7 +20,6 @@ import { TagsModule } from './tags/tags.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { HealthController } from './health/health.controller';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { MediaModule } from './media/media.module';
@@ -81,4 +80,4 @@ import { MediaModule } from './media/media.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

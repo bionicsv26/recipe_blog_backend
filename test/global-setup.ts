@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as dotenv from 'dotenv';
 
-export default async function globalSetup(): Promise<void> {
+export default function globalSetup(): void {
   dotenv.config({ path: path.resolve(__dirname, '.env.test'), override: true });
 
   const migrationsDir = path.resolve(__dirname, '..', 'prisma', 'migrations');

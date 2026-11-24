@@ -3,7 +3,6 @@ import {
   HealthIndicatorResult,
   HealthIndicatorService,
 } from '@nestjs/terminus';
-import { UploadsService } from '../uploads/uploads.service';
 import { ConfigService } from '@nestjs/config';
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 
