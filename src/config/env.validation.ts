@@ -37,11 +37,13 @@ export const envValidationSchema = Joi.object({
   SMTP_PASSWORD: Joi.string().allow('', null).optional(),
   // Допустим формат с отображаемым именем: "Recipe Blog <noreply@example.com>",
   // поэтому НЕ валидируем как email.
-  SMTP_FROM: Joi.string().min(3).when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().required(),
-    otherwise: Joi.string().default('noreply@recipeblog.dev'),
-  }),
+  SMTP_FROM: Joi.string()
+    .min(3)
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.string().required(),
+      otherwise: Joi.string().default('noreply@recipeblog.dev'),
+    }),
 
   FRONTEND_URL: Joi.string().uri().default('http://localhost:5173'),
 

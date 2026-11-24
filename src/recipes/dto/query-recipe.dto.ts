@@ -18,12 +18,24 @@ const emptyToUndefined = (val: unknown) => {
 
 export const QueryRecipeSchema = z
   .object({
-    page: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().default(1)),
-    limit: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().max(50).default(10)),
+    page: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().positive().default(1),
+    ),
+    limit: z.preprocess(
+      emptyToUndefined,
+      z.coerce.number().int().positive().max(50).default(10),
+    ),
 
     search: z.preprocess(emptyToUndefined, z.string().trim().optional()),
-    difficulty: z.preprocess(emptyToUndefined, z.enum(['EASY', 'MEDIUM', 'HARD']).optional()),
-    authorId: z.preprocess(emptyToUndefined, z.uuid({ message: 'Invalid author UUID' }).optional()),
+    difficulty: z.preprocess(
+      emptyToUndefined,
+      z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+    ),
+    authorId: z.preprocess(
+      emptyToUndefined,
+      z.uuid({ message: 'Invalid author UUID' }).optional(),
+    ),
     ingredient: z.preprocess(emptyToUndefined, z.string().trim().optional()),
     categorySlug: z.preprocess(emptyToUndefined, z.string().trim().optional()),
     tagSlug: z.preprocess(emptyToUndefined, z.string().trim().optional()),
@@ -45,4 +57,4 @@ export const QueryRecipeSchema = z
     sortOrder: data.sortOrder || 'desc',
   }));
 
-export class QueryRecipeDto extends createZodDto(QueryRecipeSchema) { }
+export class QueryRecipeDto extends createZodDto(QueryRecipeSchema) {}

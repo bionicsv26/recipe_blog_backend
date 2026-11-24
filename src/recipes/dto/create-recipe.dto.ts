@@ -28,7 +28,9 @@ export const RecipeStepInputSchema = z.object({
   instruction: z
     .string()
     .trim()
-    .min(5, { message: 'Инструкция к шагу должна содержать минимум 5 символов' })
+    .min(5, {
+      message: 'Инструкция к шагу должна содержать минимум 5 символов',
+    })
     .max(2000, { message: 'Превышен лимит описания шага' }),
   imageUrl: z
     .url({ message: 'Некорректный URL изображения шага' })
@@ -78,7 +80,9 @@ export const CreateRecipeSchema = z.object({
     .min(1, { message: 'Рецепт должен содержать хотя бы один ингредиент' }),
   steps: z
     .array(RecipeStepInputSchema)
-    .min(1, { message: 'Рецепт должен содержать хотя бы один шаг приготовления' }),
+    .min(1, {
+      message: 'Рецепт должен содержать хотя бы один шаг приготовления',
+    }),
   categoryIds: z
     .array(z.uuid({ message: 'ID категории должен быть корректным UUID' }))
     .optional()
@@ -96,4 +100,4 @@ export const CreateRecipeSchema = z.object({
     .default([]),
 });
 
-export class CreateRecipeDto extends createZodDto(CreateRecipeSchema) { }
+export class CreateRecipeDto extends createZodDto(CreateRecipeSchema) {}

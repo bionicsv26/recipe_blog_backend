@@ -6,4 +6,4 @@ export const QueryReviewsSchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
-export class QueryReviewsDto extends createZodDto(QueryReviewsSchema) { }
+export class QueryReviewsDto extends createZodDto(QueryReviewsSchema) {}

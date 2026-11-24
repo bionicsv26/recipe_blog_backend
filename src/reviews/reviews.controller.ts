@@ -22,14 +22,17 @@ import {
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { QueryReviewsDto } from './dto/query-reviews.dto';
 
 @ApiTags('Reviews')
 @Controller()
 export class ReviewsController {
-  constructor(private readonly reviewsService: ReviewsService) { }
+  constructor(private readonly reviewsService: ReviewsService) {}
 
   /**
    * Публичное получение списка отзывов конкретного рецепта
@@ -37,7 +40,9 @@ export class ReviewsController {
    */
   @Public()
   @Get('recipes/:recipeId/reviews')
-  @ApiOperation({ summary: 'Публичное получение отзывов к конкретному рецепту' })
+  @ApiOperation({
+    summary: 'Публичное получение отзывов к конкретному рецепту',
+  })
   @ApiOkResponse({ description: 'Список отзывов с пагинацией' })
   @ApiBadRequestResponse({ description: 'Некорректный UUID рецепта' })
   async findByRecipe(
@@ -56,8 +61,12 @@ export class ReviewsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Создание или обновление своего отзыва к рецепту' })
   @ApiOkResponse({ description: 'Отзыв сохранен и рейтинг рецепта пересчитан' })
-  @ApiBadRequestResponse({ description: 'Автор не может оценивать свой рецепт или ошибка валидации' })
-  @ApiForbiddenResponse({ description: 'Недостаточно прав для выполнения действия' })
+  @ApiBadRequestResponse({
+    description: 'Автор не может оценивать свой рецепт или ошибка валидации',
+  })
+  @ApiForbiddenResponse({
+    description: 'Недостаточно прав для выполнения действия',
+  })
   @ApiNotFoundResponse({ description: 'Рецепт не найден' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async createOrUpdate(

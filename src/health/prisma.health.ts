@@ -10,7 +10,7 @@ export class PrismaHealthIndicator {
   constructor(
     private readonly healthIndicatorService: HealthIndicatorService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);

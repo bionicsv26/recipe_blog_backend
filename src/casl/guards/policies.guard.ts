@@ -14,7 +14,7 @@ export class PoliciesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // getAllAndOverride проверяет метод, а если там пусто — берет политику уровня контроллера
@@ -40,7 +40,9 @@ export class PoliciesGuard implements CanActivate {
     );
 
     if (!isAllowed) {
-      throw new ForbiddenException('You do not have permission to perform this action');
+      throw new ForbiddenException(
+        'You do not have permission to perform this action',
+      );
     }
 
     return true;

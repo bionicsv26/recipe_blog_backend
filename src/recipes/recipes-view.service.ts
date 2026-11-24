@@ -11,16 +11,25 @@ export class RecipesViewService {
   constructor(
     private readonly redis: RedisService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Асинхронный инкремент просмотра с защитой от накрутки (дедупликация на 1 час)
    */
-  async incrementView(recipeId: string, clientIdentifier: string): Promise<void> {
+  async incrementView(
+    recipeId: string,
+    clientIdentifier: string,
+  ): Promise<void> {
     const dedupKey = `recipe:viewed:${recipeId}:${clientIdentifier}`;
 
     // Пытаемся установить ключ на 1 час только если его еще нет (NX)
-    const isNewVisit = await this.redis.client.set(dedupKey, '1', 'EX', 3600, 'NX');
+    const isNewVisit = await this.redis.client.set(
+      dedupKey,
+      '1',
+      'EX',
+      3600,
+      'NX',
+    );
 
     if (isNewVisit) {
       // Инкрементируем накопленный счетчик в общем хэше
@@ -62,12 +71,18 @@ export class RecipesViewService {
 
     try {
       await this.prisma.$transaction(updates);
-      this.logger.log(`Синхронизированы просмотры для ${updates.length} рецептов`);
+      this.logger.log(
+        `Синхронизированы просмотры для ${updates.length} рецептов`,
+      );
     } catch (error) {
       this.logger.error('Ошибка при синхронизации просмотров в БД', error);
       // При ошибке возвращаем значения обратно в хэш
       for (const [recipeId, countStr] of Object.entries(viewsData)) {
-        await this.redis.client.hincrby(this.HASH_KEY, recipeId, parseInt(countStr, 10));
+        await this.redis.client.hincrby(
+          this.HASH_KEY,
+          recipeId,
+          parseInt(countStr, 10),
+        );
       }
     }
   }

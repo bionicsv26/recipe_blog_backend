@@ -33,7 +33,7 @@ import { MediaModule } from './media/media.module';
       validationSchema: envValidationSchema,
       validationOptions: {
         allowUnknown: true, // разрешает системные переменные ОС
-        abortEarly: false,  // выводит сразу весь список ошибок валидации при старте
+        abortEarly: false, // выводит сразу весь список ошибок валидации при старте
       },
       expandVariables: true, // включает интерполяцию переменных вида ${POSTGRES_USER}
     }),
@@ -48,7 +48,7 @@ import { MediaModule } from './media/media.module';
       {
         name: 'default',
         ttl: 60000, // 60 секунд (в миллисекундах)
-        limit: 60,  // 60 запросов в минуту
+        limit: 60, // 60 запросов в минуту
       },
     ]),
     PrismaModule,
@@ -81,4 +81,4 @@ import { MediaModule } from './media/media.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

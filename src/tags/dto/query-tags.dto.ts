@@ -6,4 +6,4 @@ export const QueryTagsSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
-export class QueryTagsDto extends createZodDto(QueryTagsSchema) { }
+export class QueryTagsDto extends createZodDto(QueryTagsSchema) {}

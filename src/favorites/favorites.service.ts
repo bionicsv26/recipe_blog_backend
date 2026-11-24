@@ -15,7 +15,7 @@ export class FavoritesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   /**
    * Получение списка всех избранных рецептов текущего пользователя с пагинацией
@@ -23,7 +23,9 @@ export class FavoritesService {
   async getMyFavorites(user: CurrentUserData, query: QueryFavoritesDto) {
     const ability = this.caslAbilityFactory.createForUser(user);
     if (ability.cannot(Action.Read, 'Favorite')) {
-      throw new ForbiddenException('Недостаточно прав для просмотра избранного');
+      throw new ForbiddenException(
+        'Недостаточно прав для просмотра избранного',
+      );
     }
 
     const { page, limit } = query;
@@ -82,7 +84,9 @@ export class FavoritesService {
   async add(recipeId: string, user: CurrentUserData) {
     const ability = this.caslAbilityFactory.createForUser(user);
     if (ability.cannot(Action.Create, 'Favorite')) {
-      throw new ForbiddenException('Недостаточно прав для добавления в избранное');
+      throw new ForbiddenException(
+        'Недостаточно прав для добавления в избранное',
+      );
     }
 
     const recipe = await this.prisma.recipe.findUnique({

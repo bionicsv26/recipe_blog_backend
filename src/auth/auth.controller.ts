@@ -32,16 +32,20 @@ import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Регистрация нового пользователя' })
-  @ApiCreatedResponse({ description: 'Пользователь успешно зарегистрирован и возвращены токены' })
+  @ApiCreatedResponse({
+    description: 'Пользователь успешно зарегистрирован и возвращены токены',
+  })
   @ApiBadRequestResponse({ description: 'Ошибка валидации входных данных' })
-  @ApiConflictResponse({ description: 'Пользователь с таким email уже существует' })
+  @ApiConflictResponse({
+    description: 'Пользователь с таким email уже существует',
+  })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -57,7 +61,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Авторизация и получение токенов доступа' })
   @ApiOkResponse({ description: 'Успешная авторизация, выдана пара токенов' })
-  @ApiBadRequestResponse({ description: 'Некорректный формат email или пароля' })
+  @ApiBadRequestResponse({
+    description: 'Некорректный формат email или пароля',
+  })
   @ApiUnauthorizedResponse({ description: 'Неверные учетные данные' })
   async login(
     @Body() dto: LoginDto,
@@ -74,12 +80,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Обновление пары токенов по refresh token' })
   @ApiOkResponse({ description: 'Токены успешно обновлены' })
-  @ApiUnauthorizedResponse({ description: 'Недействительный или истекший refresh token' })
-  async refresh(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const tokens = await this.authService.refreshTokens(req.user.id, req.user.jti);
+  @ApiUnauthorizedResponse({
+    description: 'Недействительный или истекший refresh token',
+  })
+  async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.authService.refreshTokens(
+      req.user.id,
+      req.user.jti,
+    );
     this.setRefreshTokenCookie(res, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }
@@ -90,11 +98,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Выход из системы и отзыв активной сессии' })
   @ApiOkResponse({ description: 'Сессия успешно завершена' })
-  @ApiUnauthorizedResponse({ description: 'Токен доступа отсутствует или недействителен' })
-  async logout(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  @ApiUnauthorizedResponse({
+    description: 'Токен доступа отсутствует или недействителен',
+  })
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(req.user.id, req.user.jti);
     res.clearCookie('refreshToken');
   }
@@ -102,7 +109,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('logout-all')
-  @ApiOperation({ summary: 'Сброс всех активных сессий пользователя (на всех устройствах)' })
+  @ApiOperation({
+    summary: 'Сброс всех активных сессий пользователя (на всех устройствах)',
+  })
   @ApiOkResponse({ description: 'Все активные токены отозваны' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async logoutAll(
@@ -117,9 +126,12 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('forgot-password')
-  @ApiOperation({ summary: 'Запрос на восстановление пароля (отправка ссылки/кода)' })
+  @ApiOperation({
+    summary: 'Запрос на восстановление пароля (отправка ссылки/кода)',
+  })
   @ApiOkResponse({
-    description: 'Инструкция отправлена на почту (возвращает 200 даже если email не найден)',
+    description:
+      'Инструкция отправлена на почту (возвращает 200 даже если email не найден)',
   })
   @ApiBadRequestResponse({ description: 'Некорректный формат email' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -132,8 +144,12 @@ export class AuthController {
   @Post('reset-password')
   @ApiOperation({ summary: 'Установка нового пароля по токену сброса' })
   @ApiOkResponse({ description: 'Пароль успешно изменен' })
-  @ApiBadRequestResponse({ description: 'Слабый пароль или невалидный формат запроса' })
-  @ApiNotFoundResponse({ description: 'Токен сброса пароля недействителен или истек' })
+  @ApiBadRequestResponse({
+    description: 'Слабый пароль или невалидный формат запроса',
+  })
+  @ApiNotFoundResponse({
+    description: 'Токен сброса пароля недействителен или истек',
+  })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
   }
@@ -145,7 +161,9 @@ export class AuthController {
   @Post('change-password')
   @ApiOperation({ summary: 'Смена пароля авторизованного пользователя' })
   @ApiOkResponse({ description: 'Пароль успешно изменен' })
-  @ApiBadRequestResponse({ description: 'Неверный текущий пароль или ошибка валидации' })
+  @ApiBadRequestResponse({
+    description: 'Неверный текущий пароль или ошибка валидации',
+  })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async changePassword(
     @CurrentUser('id') userId: string,

@@ -10,4 +10,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [MediaService, MediaCleanupService],
   exports: [MediaService],
 })
-export class MediaModule { }
+export class MediaModule {}

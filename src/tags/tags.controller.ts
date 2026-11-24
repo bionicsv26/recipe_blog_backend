@@ -29,7 +29,10 @@ import { QueryTagsDto } from './dto/query-tags.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { Public } from '../common/decorators/public.decorator';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PoliciesGuard } from '../casl/guards/policies.guard';
 import { CheckPolicies } from '../casl/decorators/check-policies.decorator';
@@ -38,12 +41,14 @@ import { Action, type AppAbility } from '../casl/casl-ability.factory';
 @ApiTags('Tags')
 @Controller('tags')
 export class TagsController {
-  constructor(private readonly tagsService: TagsService) { }
+  constructor(private readonly tagsService: TagsService) {}
 
   @Public()
   @Get()
   @ApiOperation({ summary: 'Поиск и автодополнение тегов' })
-  @ApiOkResponse({ description: 'Список тегов, удовлетворяющих условиям поиска' })
+  @ApiOkResponse({
+    description: 'Список тегов, удовлетворяющих условиям поиска',
+  })
   async findAll(@Query() query: QueryTagsDto) {
     return this.tagsService.findAll(query);
   }
@@ -66,7 +71,9 @@ export class TagsController {
   @ApiBadRequestResponse({ description: 'Ошибка валидации структуры тега' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   @ApiForbiddenResponse({ description: 'Недостаточно прав для создания тега' })
-  @ApiConflictResponse({ description: 'Тег с таким названием или slug уже существует' })
+  @ApiConflictResponse({
+    description: 'Тег с таким названием или slug уже существует',
+  })
   async create(
     @Body() dto: CreateTagDto,
     @CurrentUser() user: CurrentUserData,
@@ -82,7 +89,9 @@ export class TagsController {
   @ApiOkResponse({ description: 'Тег успешно обновлен' })
   @ApiBadRequestResponse({ description: 'Некорректные параметры обновления' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  @ApiForbiddenResponse({ description: 'Недостаточно прав для редактирования тега' })
+  @ApiForbiddenResponse({
+    description: 'Недостаточно прав для редактирования тега',
+  })
   @ApiNotFoundResponse({ description: 'Тег не найден' })
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,

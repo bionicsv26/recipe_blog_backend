@@ -23,7 +23,8 @@ export class MediaService {
     const endpoint = this.configService.getOrThrow<string>('S3_ENDPOINT');
     const region = this.configService.get<string>('S3_REGION', 'us-east-1');
     const accessKeyId = this.configService.getOrThrow<string>('S3_ACCESS_KEY');
-    const secretAccessKey = this.configService.getOrThrow<string>('S3_SECRET_KEY');
+    const secretAccessKey =
+      this.configService.getOrThrow<string>('S3_SECRET_KEY');
     const useSSL = this.configService.get<string>('S3_USE_SSL') === 'true';
 
     this.s3Client = new S3Client({
@@ -52,7 +53,10 @@ export class MediaService {
     }
 
     try {
-      if (fileUrlOrKey.startsWith('http://') || fileUrlOrKey.startsWith('https://')) {
+      if (
+        fileUrlOrKey.startsWith('http://') ||
+        fileUrlOrKey.startsWith('https://')
+      ) {
         const parsed = new URL(fileUrlOrKey);
         const segments = parsed.pathname.split('/').filter(Boolean);
         if (segments[0] === this.bucketName) {
@@ -120,7 +124,9 @@ export class MediaService {
       const errorsCount = response.Errors?.length || 0;
       const deletedCount = keys.length - errorsCount;
 
-      this.logger.log(`Batch deletion complete: ${deletedCount}/${keys.length} files removed`);
+      this.logger.log(
+        `Batch deletion complete: ${deletedCount}/${keys.length} files removed`,
+      );
       return deletedCount;
     } catch (error) {
       this.logger.error('Failed to batch delete files from S3/MinIO', error);
@@ -129,8 +135,8 @@ export class MediaService {
   }
 
   /**
- * Возвращает список всех ключей объектов в бакете с датой их последнего изменения
- */
+   * Возвращает список всех ключей объектов в бакете с датой их последнего изменения
+   */
   async listAllObjects(): Promise<Array<{ key: string; lastModified?: Date }>> {
     const objects: Array<{ key: string; lastModified?: Date }> = [];
     let continuationToken: string | undefined = undefined;

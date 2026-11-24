@@ -10,7 +10,7 @@ export class RedisHealthIndicator {
   constructor(
     private readonly healthIndicatorService: HealthIndicatorService,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);

@@ -9,4 +9,4 @@ export const UploadQuerySchema = z.object({
     .default('temp'),
 });
 
-export class UploadQueryDto extends createZodDto(UploadQuerySchema) { }
+export class UploadQueryDto extends createZodDto(UploadQuerySchema) {}

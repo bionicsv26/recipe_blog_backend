@@ -10,9 +10,15 @@ import { RedisService } from '../src/redis/redis.service';
 describe('Фабрики и auth-хелпер', () => {
   let app: INestApplication;
 
-  beforeAll(async () => { app = await createTestApp(); });
-  afterAll(async () => { await app.close(); });
-  beforeEach(async () => { await resetState(app); });
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+  afterAll(async () => {
+    await app.close();
+  });
+  beforeEach(async () => {
+    await resetState(app);
+  });
 
   it('createUser + loginAs дают рабочий access-токен', async () => {
     const user = await createUser(app, { role: Role.CHEF });
@@ -33,7 +39,9 @@ describe('Фабрики и auth-хелпер', () => {
     const { refreshToken } = await loginAs(app, user.email);
 
     const { jti } = app.get(JwtService).decode(refreshToken) as { jti: string };
-    const keys = await app.get(RedisService).client.keys(`refresh_token:${user.id}:*`);
+    const keys = await app
+      .get(RedisService)
+      .client.keys(`refresh_token:${user.id}:*`);
 
     expect(keys).toHaveLength(1);
     expect(keys[0]).toContain(jti);

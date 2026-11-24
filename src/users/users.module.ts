@@ -10,4 +10,4 @@ import { CaslModule } from '../casl/casl.module';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

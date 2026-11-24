@@ -9,7 +9,9 @@ export default async function globalSetup(): Promise<void> {
   const migrationsDir = path.resolve(__dirname, '..', 'prisma', 'migrations');
   const hasMigrations =
     fs.existsSync(migrationsDir) &&
-    fs.readdirSync(migrationsDir).some((entry) => entry !== 'migration_lock.toml');
+    fs
+      .readdirSync(migrationsDir)
+      .some((entry) => entry !== 'migration_lock.toml');
 
   const command = hasMigrations
     ? 'npx prisma migrate deploy'

@@ -11,7 +11,7 @@ export class MediaCleanupService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
-  ) { }
+  ) {}
 
   // Запуск каждый день в 03:00 ночи
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -33,30 +33,31 @@ export class MediaCleanupService {
       }
 
       // 2. Собираем все используемые URL из базы данных
-      const [profiles, recipes, steps, categories, recipeImages, reviewImages] = await Promise.all([
-        this.prisma.profile.findMany({
-          where: { avatarUrl: { not: null } },
-          select: { avatarUrl: true },
-        }),
-        this.prisma.recipe.findMany({
-          where: { coverImageUrl: { not: null } },
-          select: { coverImageUrl: true },
-        }),
-        this.prisma.recipeStep.findMany({
-          where: { imageUrl: { not: null } },
-          select: { imageUrl: true },
-        }),
-        this.prisma.category.findMany({
-          where: { imageUrl: { not: null } },
-          select: { imageUrl: true },
-        }),
-        this.prisma.recipeImage.findMany({
-          select: { url: true },
-        }),
-        this.prisma.reviewImage.findMany({
-          select: { url: true },
-        }),
-      ]);
+      const [profiles, recipes, steps, categories, recipeImages, reviewImages] =
+        await Promise.all([
+          this.prisma.profile.findMany({
+            where: { avatarUrl: { not: null } },
+            select: { avatarUrl: true },
+          }),
+          this.prisma.recipe.findMany({
+            where: { coverImageUrl: { not: null } },
+            select: { coverImageUrl: true },
+          }),
+          this.prisma.recipeStep.findMany({
+            where: { imageUrl: { not: null } },
+            select: { imageUrl: true },
+          }),
+          this.prisma.category.findMany({
+            where: { imageUrl: { not: null } },
+            select: { imageUrl: true },
+          }),
+          this.prisma.recipeImage.findMany({
+            select: { url: true },
+          }),
+          this.prisma.reviewImage.findMany({
+            select: { url: true },
+          }),
+        ]);
 
       const usedKeys = new Set<string>();
 
@@ -99,7 +100,9 @@ export class MediaCleanupService {
           if (usedKeys.has(obj.key)) return false;
 
           // Проверка возраста файла (не трогаем загружаемые в данный момент)
-          const fileAge = obj.lastModified ? now - obj.lastModified.getTime() : oneDayMs + 1;
+          const fileAge = obj.lastModified
+            ? now - obj.lastModified.getTime()
+            : oneDayMs + 1;
           return fileAge > oneDayMs;
         })
         .map((obj) => obj.key);
@@ -109,11 +112,16 @@ export class MediaCleanupService {
         return;
       }
 
-      this.logger.log(`Found ${orphanKeysToDelete.length} orphan files. Deleting...`);
+      this.logger.log(
+        `Found ${orphanKeysToDelete.length} orphan files. Deleting...`,
+      );
 
       // 4. Пакетное удаление
-      const deletedCount = await this.mediaService.deleteFiles(orphanKeysToDelete);
-      this.logger.log(`Cleanup finished: ${deletedCount} orphan files successfully removed.`);
+      const deletedCount =
+        await this.mediaService.deleteFiles(orphanKeysToDelete);
+      this.logger.log(
+        `Cleanup finished: ${deletedCount} orphan files successfully removed.`,
+      );
     } catch (error) {
       this.logger.error('Error occurred during orphan files cleanup', error);
     } finally {

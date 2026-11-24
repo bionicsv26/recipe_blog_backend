@@ -29,7 +29,10 @@ import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { QueryRecipeDto } from './dto/query-recipe.dto';
 import { Public } from '../common/decorators/public.decorator';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import type { Request } from 'express';
 import { RecipesViewService } from './recipes-view.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -43,7 +46,7 @@ export class RecipesController {
   constructor(
     private readonly recipesService: RecipesService,
     private readonly recipesViewService: RecipesViewService,
-  ) { }
+  ) {}
 
   /**
    * 1. Публичный поиск и каталог опубликованных рецептов с пагинацией и фильтрами
@@ -51,8 +54,12 @@ export class RecipesController {
    */
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Каталог рецептов с пагинацией, фильтрацией и сортировкой' })
-  @ApiOkResponse({ description: 'Список опубликованных рецептов с метаданными пагинации' })
+  @ApiOperation({
+    summary: 'Каталог рецептов с пагинацией, фильтрацией и сортировкой',
+  })
+  @ApiOkResponse({
+    description: 'Список опубликованных рецептов с метаданными пагинации',
+  })
   async findAll(
     @Query() query: QueryRecipeDto,
     @CurrentUser() currentUser?: CurrentUserData,
@@ -67,7 +74,10 @@ export class RecipesController {
    */
   @ApiBearerAuth('JWT-auth')
   @Get('my')
-  @ApiOperation({ summary: 'Список рецептов текущего авторизованного автора (включая черновики)' })
+  @ApiOperation({
+    summary:
+      'Список рецептов текущего авторизованного автора (включая черновики)',
+  })
   @ApiOkResponse({ description: 'Список рецептов автора' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   async findMyRecipes(@CurrentUser() user: CurrentUserData) {
@@ -76,14 +86,21 @@ export class RecipesController {
 
   @Public()
   @Get(':id/similar')
-  @ApiOperation({ summary: 'Получение похожих рекомендаций к рецепту по категориям и тегам' })
-  @ApiOkResponse({ description: 'Список из 3-5 похожих опубликованных рецептов' })
+  @ApiOperation({
+    summary: 'Получение похожих рекомендаций к рецепту по категориям и тегам',
+  })
+  @ApiOkResponse({
+    description: 'Список из 3-5 похожих опубликованных рецептов',
+  })
   @ApiNotFoundResponse({ description: 'Исходный рецепт не найден' })
   async findSimilar(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('limit') limit?: number,
   ) {
-    return this.recipesService.findSimilar(id, limit ? Math.min(Number(limit), 10) : 4);
+    return this.recipesService.findSimilar(
+      id,
+      limit ? Math.min(Number(limit), 10) : 4,
+    );
   }
 
   /**
@@ -104,10 +121,13 @@ export class RecipesController {
     const recipe = await this.recipesService.findBySlug(slug, currentUser);
 
     // Определяем идентификатор клиента (ID авторизованного пользователя или IP)
-    const clientIdentifier = currentUser?.id || req.ip || req.socket.remoteAddress || 'anonymous';
+    const clientIdentifier =
+      currentUser?.id || req.ip || req.socket.remoteAddress || 'anonymous';
 
     // Инкремент в фоне, не блокируя отдачу ответа
-    this.recipesViewService.incrementView(recipe.id, clientIdentifier).catch(() => { });
+    this.recipesViewService
+      .incrementView(recipe.id, clientIdentifier)
+      .catch(() => {});
 
     return recipe;
   }
@@ -125,7 +145,9 @@ export class RecipesController {
   @ApiCreatedResponse({ description: 'Рецепт успешно создан' })
   @ApiBadRequestResponse({ description: 'Ошибка валидации структуры рецепта' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  @ApiForbiddenResponse({ description: 'Недостаточно прав для создания рецепта' })
+  @ApiForbiddenResponse({
+    description: 'Недостаточно прав для создания рецепта',
+  })
   async create(
     @Body() dto: CreateRecipeDto,
     @CurrentUser() user: CurrentUserData,
@@ -143,7 +165,9 @@ export class RecipesController {
   @ApiOkResponse({ description: 'Рецепт успешно обновлен' })
   @ApiBadRequestResponse({ description: 'Некорректные данные обновления' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  @ApiForbiddenResponse({ description: 'Редактирование разрешено только автору или администратору' })
+  @ApiForbiddenResponse({
+    description: 'Редактирование разрешено только автору или администратору',
+  })
   @ApiNotFoundResponse({ description: 'Рецепт не найден' })
   async update(
     @Param('id') id: string,
@@ -163,12 +187,11 @@ export class RecipesController {
   @ApiOperation({ summary: 'Удаление рецепта' })
   @ApiOkResponse({ description: 'Рецепт успешно удален' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
-  @ApiForbiddenResponse({ description: 'Удаление разрешено только автору или администратору' })
+  @ApiForbiddenResponse({
+    description: 'Удаление разрешено только автору или администратору',
+  })
   @ApiNotFoundResponse({ description: 'Рецепт не найден' })
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserData,
-  ) {
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     return this.recipesService.remove(id, user);
   }
 }

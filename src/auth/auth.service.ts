@@ -11,7 +11,10 @@ import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { JwtPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
+import {
+  JwtPayload,
+  JwtRefreshPayload,
+} from './interfaces/jwt-payload.interface';
 import { AuthTokens } from './interfaces/tokens.interface';
 import { Role } from '@prisma/client';
 import { ChangePasswordDto, LoginDto, RegisterDto } from './dto/auth.dto';
@@ -26,7 +29,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
     const existingUser = await this.prisma.user.findUnique({
@@ -77,7 +80,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await argon2.verify(user.passwordHash, dto.password);
+    const isPasswordValid = await argon2.verify(
+      user.passwordHash,
+      dto.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -145,7 +151,9 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const userId = await this.redisService.getUserIdByPasswordResetToken(dto.token);
+    const userId = await this.redisService.getUserIdByPasswordResetToken(
+      dto.token,
+    );
 
     if (!userId) {
       throw new BadRequestException('Invalid or expired password reset token');
@@ -165,7 +173,10 @@ export class AuthService {
     // 3. Завершаем все активные сессии на всех устройствах
     await this.redisService.invalidateAllUserSessions(userId);
 
-    return { message: 'Password has been reset successfully. Please log in with your new password.' };
+    return {
+      message:
+        'Password has been reset successfully. Please log in with your new password.',
+    };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
@@ -177,7 +188,10 @@ export class AuthService {
       throw new UnauthorizedException('Пользователь не найден');
     }
 
-    const isPasswordValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    const isPasswordValid = await argon2.verify(
+      user.passwordHash,
+      dto.currentPassword,
+    );
     if (!isPasswordValid) {
       throw new BadRequestException('Неверный текущий пароль');
     }
@@ -200,10 +214,14 @@ export class AuthService {
     const refreshPayload: JwtRefreshPayload = { ...payload, jti: tokenId };
 
     const accessSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
-    const accessExpiration = Number(this.configService.get<number>('JWT_ACCESS_EXPIRATION', 900));
+    const accessExpiration = Number(
+      this.configService.get<number>('JWT_ACCESS_EXPIRATION', 900),
+    );
 
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-    const refreshExpiration = Number(this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800));
+    const refreshExpiration = Number(
+      this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800),
+    );
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -216,7 +234,11 @@ export class AuthService {
       }),
     ]);
 
-    await this.redisService.saveRefreshToken(userId, tokenId, refreshExpiration);
+    await this.redisService.saveRefreshToken(
+      userId,
+      tokenId,
+      refreshExpiration,
+    );
 
     return { accessToken, refreshToken };
   }

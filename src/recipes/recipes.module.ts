@@ -8,4 +8,4 @@ import { RecipesViewService } from './recipes-view.service';
   providers: [RecipesService, RecipesViewService],
   exports: [RecipesService],
 })
-export class RecipesModule { }
+export class RecipesModule {}

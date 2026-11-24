@@ -24,7 +24,10 @@ import {
 } from '@nestjs/swagger';
 import { FavoritesService } from './favorites.service';
 import { QueryFavoritesDto } from './dto/query-favorites.dto';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Favorites')
@@ -32,10 +35,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('favorites')
 export class FavoritesController {
-  constructor(private readonly favoritesService: FavoritesService) { }
+  constructor(private readonly favoritesService: FavoritesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Получение списка рецептов в закладках текущего пользователя' })
+  @ApiOperation({
+    summary: 'Получение списка рецептов в закладках текущего пользователя',
+  })
   @ApiOkResponse({ description: 'Список сохраненных рецептов' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })
   @ApiForbiddenResponse({ description: 'Недостаточно прав' })
@@ -47,7 +52,9 @@ export class FavoritesController {
   }
 
   @Get(':recipeId/status')
-  @ApiOperation({ summary: 'Проверка статуса: находится ли рецепт в избранном' })
+  @ApiOperation({
+    summary: 'Проверка статуса: находится ли рецепт в избранном',
+  })
   @ApiOkResponse({ description: 'Флаг isFavorite (true/false)' })
   @ApiBadRequestResponse({ description: 'Некорректный UUID рецепта' })
   @ApiUnauthorizedResponse({ description: 'Требуется авторизация' })

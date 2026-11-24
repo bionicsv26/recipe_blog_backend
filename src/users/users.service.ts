@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { subject } from '@casl/ability';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -12,7 +17,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   /**
    * Получение профиля (Свой или чужой, если есть права)
@@ -29,7 +34,9 @@ export class UsersService {
 
     const ability = this.caslAbilityFactory.createForUser(currentUser);
     if (ability.cannot(Action.Read, subject('User', user as any))) {
-      throw new ForbiddenException('У вас нет прав для просмотра этого профиля');
+      throw new ForbiddenException(
+        'У вас нет прав для просмотра этого профиля',
+      );
     }
 
     const { passwordHash, ...userWithoutPassword } = user;
@@ -66,7 +73,11 @@ export class UsersService {
   /**
    * Обновление профиля с проверкой CASL
    */
-  async updateProfile(targetUserId: string, dto: UpdateProfileDto, currentUser: CurrentUserData) {
+  async updateProfile(
+    targetUserId: string,
+    dto: UpdateProfileDto,
+    currentUser: CurrentUserData,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
       include: { profile: true },
@@ -78,7 +89,9 @@ export class UsersService {
 
     const ability = this.caslAbilityFactory.createForUser(currentUser);
     if (ability.cannot(Action.Update, subject('User', user as any))) {
-      throw new ForbiddenException('У вас нет прав на редактирование этого профиля');
+      throw new ForbiddenException(
+        'У вас нет прав на редактирование этого профиля',
+      );
     }
 
     if (dto.username && dto.username !== user.profile?.username) {
@@ -102,7 +115,11 @@ export class UsersService {
       );
     }
 
-    if (oldAvatarUrl && dto.avatarUrl !== undefined && oldAvatarUrl !== finalAvatarUrl) {
+    if (
+      oldAvatarUrl &&
+      dto.avatarUrl !== undefined &&
+      oldAvatarUrl !== finalAvatarUrl
+    ) {
       await this.mediaService.deleteFile(oldAvatarUrl);
     }
 

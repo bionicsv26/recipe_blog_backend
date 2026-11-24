@@ -6,12 +6,20 @@ import { resetState } from './utils/reset';
 describe('e2e каркас', () => {
   let app: INestApplication;
 
-  beforeAll(async () => { app = await createTestApp(); });
-  afterAll(async () => { await app.close(); });
-  beforeEach(async () => { await resetState(app); });
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+  afterAll(async () => {
+    await app.close();
+  });
+  beforeEach(async () => {
+    await resetState(app);
+  });
 
   it('GET /categories → 200 и пустой список', async () => {
-    const res = await request(app.getHttpServer()).get('/categories').expect(200);
+    const res = await request(app.getHttpServer())
+      .get('/categories')
+      .expect(200);
     expect(res.body).toEqual([]);
   });
 

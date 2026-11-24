@@ -29,14 +29,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PoliciesGuard } from '../casl/guards/policies.guard';
 import { CheckPolicies } from '../casl/decorators/check-policies.decorator';
 import { Action, type AppAbility } from '../casl/casl-ability.factory';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 
 @ApiTags('Uploads')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, PoliciesGuard)
 @Controller('uploads')
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) { }
+  constructor(private readonly uploadsService: UploadsService) {}
 
   @Post('image')
   @HttpCode(HttpStatus.OK)

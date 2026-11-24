@@ -15,10 +15,15 @@ export const CreateReviewSchema = z.object({
   comment: z
     .string()
     .trim()
-    .max(1000, { message: 'Длина комментария не может превышать 1000 символов' })
+    .max(1000, {
+      message: 'Длина комментария не может превышать 1000 символов',
+    })
     .optional()
     .nullable(),
-  images: z.array(ReviewImageInputSchema).max(5, { message: 'Максимум 5 фото' }).default([]),
+  images: z
+    .array(ReviewImageInputSchema)
+    .max(5, { message: 'Максимум 5 фото' })
+    .default([]),
 });
 
-export class CreateReviewDto extends createZodDto(CreateReviewSchema) { }
+export class CreateReviewDto extends createZodDto(CreateReviewSchema) {}

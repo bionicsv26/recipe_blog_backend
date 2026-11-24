@@ -6,7 +6,15 @@ import {
   MongoAbility,
 } from '@casl/ability';
 import { Injectable } from '@nestjs/common';
-import { Category, Favorite, Recipe, Review, Role, Tag, User } from '@prisma/client';
+import {
+  Category,
+  Favorite,
+  Recipe,
+  Review,
+  Role,
+  Tag,
+  User,
+} from '@prisma/client';
 
 export enum Action {
   Manage = 'manage',
@@ -37,7 +45,9 @@ export interface AbilityUser {
 @Injectable()
 export class CaslAbilityFactory {
   createForUser(user: AbilityUser): AppAbility {
-    const { can, cannot, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+    const { can, cannot, build } = new AbilityBuilder<AppAbility>(
+      createMongoAbility,
+    );
 
     // Базовые публичные разрешения для всех авторизованных ролей
     can(Action.Read, 'Category');
@@ -166,7 +176,8 @@ export class CaslAbilityFactory {
           return 'User';
         }
 
-        return (obj.constructor?.name ?? 'all') as ExtractSubjectType<AppSubjects>;
+        return (obj.constructor?.name ??
+          'all') as ExtractSubjectType<AppSubjects>;
       },
     });
   }

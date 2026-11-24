@@ -47,7 +47,12 @@ export async function loginAs(app: INestApplication, email: string) {
  */
 export async function createRecipe(
   app: INestApplication,
-  opts: { authorId: string; isPublished?: boolean; slug?: string; title?: string },
+  opts: {
+    authorId: string;
+    isPublished?: boolean;
+    slug?: string;
+    title?: string;
+  },
 ) {
   return app.get(PrismaService).recipe.create({
     data: {

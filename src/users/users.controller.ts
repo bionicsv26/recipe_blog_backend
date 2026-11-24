@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -13,7 +21,10 @@ import { UsersService } from './users.service';
 import { CaslAbilityFactory } from '../casl/casl-ability.factory';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
-import { CurrentUser, type CurrentUserData } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserData,
+} from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Users')
@@ -44,7 +55,9 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  @ApiOperation({ summary: 'Получение профиля текущего пользователя и правил CASL' })
+  @ApiOperation({
+    summary: 'Получение профиля текущего пользователя и правил CASL',
+  })
   @ApiOkResponse({
     description: 'Данные профиля и массив правил авторизации',
     type: UserProfileResponseDto,
@@ -87,7 +100,9 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  @ApiOperation({ summary: 'Получение приватного профиля по ID (Модератор/Админ)' })
+  @ApiOperation({
+    summary: 'Получение приватного профиля по ID (Модератор/Админ)',
+  })
   @ApiOkResponse({ type: UserProfileResponseDto })
   @ApiForbiddenResponse({ description: 'Недостаточно прав' })
   async getUserProfile(

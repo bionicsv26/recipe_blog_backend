@@ -18,14 +18,16 @@ export class RecipesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   private async generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = slugify(title);
     let candidateSlug = baseSlug;
     let counter = 1;
 
-    while (await this.prisma.recipe.findUnique({ where: { slug: candidateSlug } })) {
+    while (
+      await this.prisma.recipe.findUnique({ where: { slug: candidateSlug } })
+    ) {
       candidateSlug = `${baseSlug}-${counter}`;
       counter++;
     }
@@ -36,10 +38,15 @@ export class RecipesService {
   /**
    * Создание тегов или получение существующих id
    */
-  private async resolveTagIds(tx: Prisma.TransactionClient, tagNames: string[]): Promise<string[]> {
+  private async resolveTagIds(
+    tx: Prisma.TransactionClient,
+    tagNames: string[],
+  ): Promise<string[]> {
     if (!tagNames || tagNames.length === 0) return [];
 
-    const uniqueNames = Array.from(new Set(tagNames.map((t) => t.trim().toLowerCase()))).filter(Boolean);
+    const uniqueNames = Array.from(
+      new Set(tagNames.map((t) => t.trim().toLowerCase())),
+    ).filter(Boolean);
 
     const tagIds: string[] = [];
     for (const name of uniqueNames) {
@@ -58,7 +65,9 @@ export class RecipesService {
   async create(dto: CreateRecipeDto, user: CurrentUserData) {
     const ability = this.caslAbilityFactory.createForUser(user);
     if (!ability.can(Action.Create, 'Recipe')) {
-      throw new ForbiddenException('You do not have permission to create recipes');
+      throw new ForbiddenException(
+        'You do not have permission to create recipes',
+      );
     }
 
     const slug = await this.generateUniqueSlug(dto.title);
@@ -196,8 +205,14 @@ export class RecipesService {
         take: limit,
         orderBy,
         include: {
-          categories: { include: { category: { select: { id: true, name: true, slug: true } } } },
-          tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+          categories: {
+            include: {
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          },
+          tags: {
+            include: { tag: { select: { id: true, name: true, slug: true } } },
+          },
           author: {
             select: {
               id: true,
@@ -368,7 +383,10 @@ export class RecipesService {
     });
   }
 
-  async remove(id: string, user: CurrentUserData): Promise<{ message: string }> {
+  async remove(
+    id: string,
+    user: CurrentUserData,
+  ): Promise<{ message: string }> {
     const recipe = await this.prisma.recipe.findUnique({ where: { id } });
 
     if (!recipe) {
@@ -446,7 +464,9 @@ export class RecipesService {
           },
         },
         categories: {
-          include: { category: { select: { id: true, name: true, slug: true } } },
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
         },
         tags: {
           include: { tag: { select: { id: true, name: true, slug: true } } },

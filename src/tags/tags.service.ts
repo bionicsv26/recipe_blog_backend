@@ -18,7 +18,7 @@ export class TagsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   async findAll(query: QueryTagsDto) {
     const { search, limit } = query;
@@ -26,8 +26,8 @@ export class TagsService {
     return this.prisma.tag.findMany({
       where: search
         ? {
-          name: { contains: search, mode: 'insensitive' },
-        }
+            name: { contains: search, mode: 'insensitive' },
+          }
         : undefined,
       take: limit,
       orderBy: { name: 'asc' },
@@ -61,7 +61,9 @@ export class TagsService {
     });
 
     if (existing) {
-      throw new ConflictException('Тег с таким названием или slug уже существует');
+      throw new ConflictException(
+        'Тег с таким названием или slug уже существует',
+      );
     }
 
     return this.prisma.tag.create({

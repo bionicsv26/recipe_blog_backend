@@ -19,18 +19,38 @@ describe('MediaCleanupService', () => {
 
   it('не удаляет объекты, на которые есть ссылки в БД', async () => {
     const prismaMock = {
-      profile: { findMany: jest.fn().mockResolvedValue([{ avatarUrl: url(keys.avatar) }]) },
-      recipe: { findMany: jest.fn().mockResolvedValue([{ coverImageUrl: url(keys.cover) }]) },
-      recipeStep: { findMany: jest.fn().mockResolvedValue([{ imageUrl: url(keys.step) }]) },
-      category: { findMany: jest.fn().mockResolvedValue([{ imageUrl: url(keys.category) }]) },
-      recipeImage: { findMany: jest.fn().mockResolvedValue([{ url: url(keys.gallery) }]) },
-      reviewImage: { findMany: jest.fn().mockResolvedValue([{ url: url(keys.review) }]) },
+      profile: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ avatarUrl: url(keys.avatar) }]),
+      },
+      recipe: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ coverImageUrl: url(keys.cover) }]),
+      },
+      recipeStep: {
+        findMany: jest.fn().mockResolvedValue([{ imageUrl: url(keys.step) }]),
+      },
+      category: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ imageUrl: url(keys.category) }]),
+      },
+      recipeImage: {
+        findMany: jest.fn().mockResolvedValue([{ url: url(keys.gallery) }]),
+      },
+      reviewImage: {
+        findMany: jest.fn().mockResolvedValue([{ url: url(keys.review) }]),
+      },
     };
 
     const mediaMock = {
-      listAllObjects: jest.fn().mockResolvedValue(
-        Object.values(keys).map((key) => ({ key, lastModified: old })),
-      ),
+      listAllObjects: jest
+        .fn()
+        .mockResolvedValue(
+          Object.values(keys).map((key) => ({ key, lastModified: old })),
+        ),
       extractKeyFromUrl: jest.fn((value: string) => value.replace(prefix, '')),
       deleteFiles: jest.fn().mockResolvedValue(1),
     };

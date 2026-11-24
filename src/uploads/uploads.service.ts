@@ -42,18 +42,30 @@ export class UploadsService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
   ) {
-    this.bucketName = this.configService.get<string>('S3_BUCKET_NAME', 'recipe-media');
+    this.bucketName = this.configService.get<string>(
+      'S3_BUCKET_NAME',
+      'recipe-media',
+    );
     this.publicUrl = this.configService.get<string>(
       'S3_PUBLIC_URL',
       'http://localhost:9000/recipe-media',
     );
 
     this.s3Client = new S3Client({
-      endpoint: this.configService.get<string>('S3_ENDPOINT', 'http://localhost:9000'),
+      endpoint: this.configService.get<string>(
+        'S3_ENDPOINT',
+        'http://localhost:9000',
+      ),
       region: this.configService.get<string>('S3_REGION', 'us-east-1'),
       credentials: {
-        accessKeyId: this.configService.get<string>('S3_ACCESS_KEY', 'minioadmin'),
-        secretAccessKey: this.configService.get<string>('S3_SECRET_KEY', 'minioadmin'),
+        accessKeyId: this.configService.get<string>(
+          'S3_ACCESS_KEY',
+          'minioadmin',
+        ),
+        secretAccessKey: this.configService.get<string>(
+          'S3_SECRET_KEY',
+          'minioadmin',
+        ),
       },
       forcePathStyle: true,
     });
@@ -68,10 +80,14 @@ export class UploadsService implements OnModuleInit {
    */
   private async ensureBucketExists(): Promise<void> {
     try {
-      await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucketName }));
+      await this.s3Client.send(
+        new HeadBucketCommand({ Bucket: this.bucketName }),
+      );
     } catch {
       this.logger.warn(`Бакет "${this.bucketName}" не найден. Создание...`);
-      await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucketName }));
+      await this.s3Client.send(
+        new CreateBucketCommand({ Bucket: this.bucketName }),
+      );
 
       const policy = {
         Version: '2012-10-17',
@@ -92,7 +108,9 @@ export class UploadsService implements OnModuleInit {
           Policy: JSON.stringify(policy),
         }),
       );
-      this.logger.log(`Бакет "${this.bucketName}" успешно создан и сконфигурирован.`);
+      this.logger.log(
+        `Бакет "${this.bucketName}" успешно создан и сконфигурирован.`,
+      );
     }
   }
 
@@ -115,16 +133,25 @@ export class UploadsService implements OnModuleInit {
       (folder === 'recipes' || folder === 'reviews') &&
       ability.cannot(Action.Manage, 'Upload')
     ) {
-      throw new ForbiddenException('Прямая загрузка в данный каталог запрещена');
+      throw new ForbiddenException(
+        'Прямая загрузка в данный каталог запрещена',
+      );
     }
 
     if (!file || !file.buffer) {
       throw new BadRequestException('Файл не передан');
     }
 
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/avif',
+    ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Разрешены только форматы JPEG, PNG, WEBP, AVIF');
+      throw new BadRequestException(
+        'Разрешены только форматы JPEG, PNG, WEBP, AVIF',
+      );
     }
 
     if (file.size > 5 * 1024 * 1024) {
@@ -158,11 +185,16 @@ export class UploadsService implements OnModuleInit {
         height: metadata.height || 0,
       };
     } catch (error) {
-      if (error instanceof BadRequestException || error instanceof ForbiddenException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       this.logger.error('Ошибка загрузки файла в S3', error);
-      throw new InternalServerErrorException('Не удалось сохранить изображение');
+      throw new InternalServerErrorException(
+        'Не удалось сохранить изображение',
+      );
     }
   }
 }

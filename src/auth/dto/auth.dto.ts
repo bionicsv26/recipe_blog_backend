@@ -10,7 +10,9 @@ export const RegisterSchema = z.object({
   password: z
     .string()
     .min(8, { message: 'Password must be at least 8 characters long' })
-    .regex(/[A-ZА-ЯЁ]/, { message: 'Password must contain at least one uppercase letter' })
+    .regex(/[A-ZА-ЯЁ]/, {
+      message: 'Password must contain at least one uppercase letter',
+    })
     .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
   username: z
     .string()
@@ -22,7 +24,10 @@ export const RegisterSchema = z.object({
     }),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  bio: z.string().max(300, { message: 'Bio cannot exceed 300 characters' }).optional(),
+  bio: z
+    .string()
+    .max(300, { message: 'Bio cannot exceed 300 characters' })
+    .optional(),
 });
 
 // Схема логина
@@ -34,11 +39,15 @@ export const LoginSchema = z.object({
 // Схема смены пароля
 export const ChangePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, { message: 'Current password is required' }),
+    currentPassword: z
+      .string()
+      .min(1, { message: 'Current password is required' }),
     newPassword: z
       .string()
       .min(8, { message: 'Password must be at least 8 characters long' })
-      .regex(/[A-ZА-ЯЁ]/, { message: 'Password must contain at least one uppercase letter' })
+      .regex(/[A-ZА-ЯЁ]/, {
+        message: 'Password must contain at least one uppercase letter',
+      })
       .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
@@ -47,6 +56,6 @@ export const ChangePasswordSchema = z
   });
 
 // Генерация DTO-классов для внедрения типов в контроллеры
-export class RegisterDto extends createZodDto(RegisterSchema) { }
-export class LoginDto extends createZodDto(LoginSchema) { }
-export class ChangePasswordDto extends createZodDto(ChangePasswordSchema) { }
+export class RegisterDto extends createZodDto(RegisterSchema) {}
+export class LoginDto extends createZodDto(LoginSchema) {}
+export class ChangePasswordDto extends createZodDto(ChangePasswordSchema) {}

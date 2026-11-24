@@ -1,11 +1,18 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/create-category.dto';
+import {
+  CreateCategoryDto,
+  UpdateCategoryDto,
+} from './dto/create-category.dto';
 import { slugify } from '../common/utils/slugify.util';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
     return this.prisma.category.findMany({
@@ -50,7 +57,9 @@ export class CategoriesService {
     });
 
     if (existing) {
-      throw new ConflictException('Категория с таким названием или slug уже существует');
+      throw new ConflictException(
+        'Категория с таким названием или slug уже существует',
+      );
     }
 
     return this.prisma.category.create({

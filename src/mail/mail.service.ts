@@ -68,7 +68,10 @@ import * as path from 'path';
 export class MailService implements OnModuleInit {
   private readonly transporter: Transporter;
   private readonly logger = new Logger(MailService.name);
-  private readonly templateCache = new Map<string, handlebars.TemplateDelegate>();
+  private readonly templateCache = new Map<
+    string,
+    handlebars.TemplateDelegate
+  >();
 
   constructor(private readonly configService: ConfigService) {
     const host = this.configService.get<string>('SMTP_HOST', 'localhost');
@@ -103,7 +106,13 @@ export class MailService implements OnModuleInit {
 
     // 2. Fallback: если файла нет в dist, ищем в исходниках src/
     if (!fs.existsSync(templatePath)) {
-      templatePath = path.join(process.cwd(), 'src', 'mail', 'templates', `${templateName}.hbs`);
+      templatePath = path.join(
+        process.cwd(),
+        'src',
+        'mail',
+        'templates',
+        `${templateName}.hbs`,
+      );
     }
 
     if (!fs.existsSync(templatePath)) {
@@ -122,8 +131,13 @@ export class MailService implements OnModuleInit {
     token: string,
     username?: string,
   ): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-    const from = this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER');
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
+    const from =
+      this.configService.get<string>('SMTP_FROM') ||
+      this.configService.get<string>('SMTP_USER');
     const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}`;
 
     const template = this.getTemplate('reset-password');
@@ -147,8 +161,13 @@ export class MailService implements OnModuleInit {
   }
 
   async sendWelcomeEmail(to: string, username?: string): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-    const from = this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER');
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
+    const from =
+      this.configService.get<string>('SMTP_FROM') ||
+      this.configService.get<string>('SMTP_USER');
 
     const template = this.getTemplate('welcome');
     const html = template({

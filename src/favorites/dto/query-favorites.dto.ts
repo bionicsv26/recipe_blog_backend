@@ -6,4 +6,4 @@ export const QueryFavoritesSchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
-export class QueryFavoritesDto extends createZodDto(QueryFavoritesSchema) { }
+export class QueryFavoritesDto extends createZodDto(QueryFavoritesSchema) {}

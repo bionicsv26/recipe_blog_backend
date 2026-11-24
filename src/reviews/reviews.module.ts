@@ -7,4 +7,4 @@ import { ReviewsController } from './reviews.controller';
   providers: [ReviewsService],
   exports: [ReviewsService],
 })
-export class ReviewsModule { }
+export class ReviewsModule {}

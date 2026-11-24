@@ -90,7 +90,11 @@ export class RedisService implements OnModuleDestroy {
   }
 
   // Сохранение токена сброса (TTL обычно 15 минут / 900 сек)
-  async savePasswordResetToken(userId: string, token: string, ttlSeconds = 900): Promise<void> {
+  async savePasswordResetToken(
+    userId: string,
+    token: string,
+    ttlSeconds = 900,
+  ): Promise<void> {
     const key = `password_reset:${token}`;
     await this.redisClient.set(key, userId, 'EX', ttlSeconds);
   }

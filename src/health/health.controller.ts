@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   HealthCheck,
   HealthCheckService,
@@ -19,16 +24,19 @@ export class HealthController {
     private readonly redisHealth: RedisHealthIndicator,
     private readonly s3Health: S3HealthIndicator,
     private readonly memoryHealth: MemoryHealthIndicator,
-  ) { }
+  ) {}
 
   @Public()
   @Get()
   @HealthCheck()
   @ApiOperation({
-    summary: 'Проверка доступности ключевых сервисов (PostgreSQL, Redis, MinIO S3, Memory)',
+    summary:
+      'Проверка доступности ключевых сервисов (PostgreSQL, Redis, MinIO S3, Memory)',
   })
   @ApiOkResponse({ description: 'Все службы функционируют нормально' })
-  @ApiServiceUnavailableResponse({ description: 'Один или несколько сервисов недоступны' })
+  @ApiServiceUnavailableResponse({
+    description: 'Один или несколько сервисов недоступны',
+  })
   async check() {
     return this.health.check([
       () => this.prismaHealth.isHealthy('database'),

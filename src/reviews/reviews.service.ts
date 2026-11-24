@@ -17,12 +17,15 @@ export class ReviewsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   /**
    * Пересчет и сохранение averageRating и ratingsCount в транзакции
    */
-  private async recalculateRecipeRating(tx: Prisma.TransactionClient, recipeId: string) {
+  private async recalculateRecipeRating(
+    tx: Prisma.TransactionClient,
+    recipeId: string,
+  ) {
     const aggregate = await tx.review.aggregate({
       where: { recipeId },
       _avg: { rating: true },
@@ -46,7 +49,11 @@ export class ReviewsService {
   /**
    * Создание или обновление отзыва к рецепту
    */
-  async createOrUpdate(recipeId: string, dto: CreateReviewDto, user: CurrentUserData) {
+  async createOrUpdate(
+    recipeId: string,
+    dto: CreateReviewDto,
+    user: CurrentUserData,
+  ) {
     const recipe = await this.prisma.recipe.findUnique({
       where: { id: recipeId },
       select: { id: true, authorId: true, isPublished: true },
@@ -57,7 +64,9 @@ export class ReviewsService {
     }
 
     if (recipe.authorId === user.id) {
-      throw new BadRequestException('Автор не может оценивать собственный рецепт');
+      throw new BadRequestException(
+        'Автор не может оценивать собственный рецепт',
+      );
     }
 
     const ability = this.caslAbilityFactory.createForUser(user);
@@ -74,8 +83,12 @@ export class ReviewsService {
 
     // Проверка CASL прав
     if (existingReview) {
-      if (ability.cannot(Action.Update, subject('Review', existingReview as any))) {
-        throw new ForbiddenException('У вас нет прав на редактирование этого отзыва');
+      if (
+        ability.cannot(Action.Update, subject('Review', existingReview as any))
+      ) {
+        throw new ForbiddenException(
+          'У вас нет прав на редактирование этого отзыва',
+        );
       }
     } else {
       if (ability.cannot(Action.Create, 'Review')) {

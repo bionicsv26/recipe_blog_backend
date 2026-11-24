@@ -8,9 +8,15 @@ import { createUser, createRecipe, loginAs } from './utils/factories';
 describe('REC-01 · доступ автора к своему черновику', () => {
   let app: INestApplication;
 
-  beforeAll(async () => { app = await createTestApp(); });
-  afterAll(async () => { await app.close(); });
-  beforeEach(async () => { await resetState(app); });
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+  afterAll(async () => {
+    await app.close();
+  });
+  beforeEach(async () => {
+    await resetState(app);
+  });
 
   // ОЖИДАЕТСЯ ПАДАЮЩИМ до PR8.
   // @Public() + глобальный JwtAuthGuard → req.user не заполняется → 404.
@@ -18,7 +24,10 @@ describe('REC-01 · доступ автора к своему черновику
   it.failing('автор открывает свой черновик по slug → 200', async () => {
     const chef = await createUser(app, { role: Role.CHEF });
     const { accessToken } = await loginAs(app, chef.email);
-    const draft = await createRecipe(app, { authorId: chef.id, isPublished: false });
+    const draft = await createRecipe(app, {
+      authorId: chef.id,
+      isPublished: false,
+    });
 
     const res = await request(app.getHttpServer())
       .get(`/recipes/${draft.slug}`)
@@ -32,7 +41,10 @@ describe('REC-01 · доступ автора к своему черновику
     const chef = await createUser(app, { role: Role.CHEF });
     const admin = await createUser(app, { role: Role.ADMIN });
     const { accessToken } = await loginAs(app, admin.email);
-    const draft = await createRecipe(app, { authorId: chef.id, isPublished: false });
+    const draft = await createRecipe(app, {
+      authorId: chef.id,
+      isPublished: false,
+    });
 
     const res = await request(app.getHttpServer())
       .get(`/recipes/${draft.slug}`)
@@ -44,7 +56,10 @@ describe('REC-01 · доступ автора к своему черновику
   it('черновик виден автору в списке /recipes/my', async () => {
     const chef = await createUser(app, { role: Role.CHEF });
     const { accessToken } = await loginAs(app, chef.email);
-    const draft = await createRecipe(app, { authorId: chef.id, isPublished: false });
+    const draft = await createRecipe(app, {
+      authorId: chef.id,
+      isPublished: false,
+    });
 
     const res = await request(app.getHttpServer())
       .get('/recipes/my')
@@ -56,9 +71,14 @@ describe('REC-01 · доступ автора к своему черновику
 
   it('аноним не видит черновик → 404', async () => {
     const chef = await createUser(app, { role: Role.CHEF });
-    const draft = await createRecipe(app, { authorId: chef.id, isPublished: false });
+    const draft = await createRecipe(app, {
+      authorId: chef.id,
+      isPublished: false,
+    });
 
-    await request(app.getHttpServer()).get(`/recipes/${draft.slug}`).expect(404);
+    await request(app.getHttpServer())
+      .get(`/recipes/${draft.slug}`)
+      .expect(404);
   });
 
   // Обязан остаться зелёным и ПОСЛЕ фикса: чужой черновик → 404, не 403.
@@ -68,7 +88,10 @@ describe('REC-01 · доступ автора к своему черновику
     const owner = await createUser(app, { role: Role.CHEF });
     const other = await createUser(app, { role: Role.CHEF });
     const { accessToken } = await loginAs(app, other.email);
-    const draft = await createRecipe(app, { authorId: owner.id, isPublished: false });
+    const draft = await createRecipe(app, {
+      authorId: owner.id,
+      isPublished: false,
+    });
 
     await request(app.getHttpServer())
       .get(`/recipes/${draft.slug}`)

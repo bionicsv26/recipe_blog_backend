@@ -10,4 +10,4 @@ export const ChangeRoleSchema = z.object({
   }),
 });
 
-export class ChangeRoleDto extends createZodDto(ChangeRoleSchema) { }
+export class ChangeRoleDto extends createZodDto(ChangeRoleSchema) {}
