@@ -18,7 +18,7 @@ export class RecipesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) { }
+  ) {}
 
   private async generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = slugify(title);

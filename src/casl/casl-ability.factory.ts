@@ -45,9 +45,7 @@ export interface AbilityUser {
 @Injectable()
 export class CaslAbilityFactory {
   createForUser(user: AbilityUser): AppAbility {
-    const { can, build } = new AbilityBuilder<AppAbility>(
-      createMongoAbility,
-    );
+    const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 
     // Базовые публичные разрешения для всех авторизованных ролей
     can(Action.Read, 'Category');

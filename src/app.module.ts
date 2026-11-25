@@ -80,4 +80,4 @@ import { MediaModule } from './media/media.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

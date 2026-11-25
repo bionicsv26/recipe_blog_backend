@@ -78,11 +78,9 @@ export const CreateRecipeSchema = z.object({
   ingredients: z
     .array(RecipeIngredientInputSchema)
     .min(1, { message: 'Рецепт должен содержать хотя бы один ингредиент' }),
-  steps: z
-    .array(RecipeStepInputSchema)
-    .min(1, {
-      message: 'Рецепт должен содержать хотя бы один шаг приготовления',
-    }),
+  steps: z.array(RecipeStepInputSchema).min(1, {
+    message: 'Рецепт должен содержать хотя бы один шаг приготовления',
+  }),
   categoryIds: z
     .array(z.uuid({ message: 'ID категории должен быть корректным UUID' }))
     .optional()
