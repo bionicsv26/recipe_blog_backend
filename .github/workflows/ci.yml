@@ -48,9 +48,9 @@ jobs:
 
       - name: Start dependencies
         run: |
-          docker compose --profile test up -d --wait postgres redis redis-test minio
+          docker compose --profile test up -d --wait postgres redis redis-test rustfs
           docker compose --profile test up -d mailhog
-          docker compose --profile test run --rm minio-init
+          docker compose --profile test run --rm s3-init
 
       - name: Lint
         run: npm run lint:check

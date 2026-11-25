@@ -63,72 +63,56 @@ services:
     networks:
       - recipe-blog-net
 
-  minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: recipe-blog-minio
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: recipe-blog-rustfs
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    command: /data
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
     ports:
-      - '9000:9000' # S3 API
-      - '9001:9001' # Web Console
+      - '9000:9000'   # S3 API
+      - '9001:9001'   # Console
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      # test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:9000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 5s
+      start_period: 10s
     networks:
       - recipe-blog-net
-  minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
-    container_name: recipe_minio_init
+
+  s3-init:
+    image: amazon/aws-cli:latest
+    container_name: recipe_blog_s3_init
     depends_on:
-      minio:
+      rustfs:
         condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      AWS_EC2_METADATA_DISABLED: "true"
+      S3_ENDPOINT_INTERNAL: http://rustfs:9000
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_TEST_BUCKET_NAME: ${S3_TEST_BUCKET_NAME:-recipe-media-test}
+    volumes:
+      - ./docker/s3:/scripts:ro
+    entrypoint: ["/bin/sh", "/scripts/init.sh"]
     networks:
       - recipe-blog-net
-    # [MEDIA-01] ILM-правило на temp/ намеренно НЕ создаётся.
-    # На объекты в temp/ есть живые ссылки в БД (обложки рецептов, фото шагов
-    # и отзывов): moveToPermanent для них не вызывается. Хранилище не знает
-    # о БД, поэтому ретенция на уровне ILM уничтожала используемые файлы.
-    # Ретенция сирот — только на стороне приложения (MediaCleanupService).
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Подключение к MinIO...';
-      /usr/bin/mc alias set myminio http://minio:9000 ${S3_ACCESS_KEY} ${S3_SECRET_KEY};
-
-      echo 'Создание бакета ${S3_BUCKET_NAME}...';
-      /usr/bin/mc mb --ignore-existing myminio/${S3_BUCKET_NAME};
-
-      echo 'Создание тестового бакета...';
-      /usr/bin/mc mb --ignore-existing myminio/${S3_TEST_BUCKET_NAME:-recipe-media-test};
-      /usr/bin/mc anonymous set download myminio/${S3_TEST_BUCKET_NAME:-recipe-media-test};
-
-      echo 'Установка публичной политики чтения (download)...';
-      /usr/bin/mc anonymous set download myminio/${S3_BUCKET_NAME};
-
-      echo 'Снятие ILM-правил (ретенция только на стороне приложения)...';
-      /usr/bin/mc ilm rule remove --all --force myminio/${S3_BUCKET_NAME} || true;
-
-      echo 'Список активных правил Lifecycle (ожидается пусто):';
-      /usr/bin/mc ilm rule list myminio/${S3_BUCKET_NAME};
-
-      echo '(сообщение об отсутствии lifecycle-конфигурации = правил нет, это ожидаемо)';
-
-      echo 'Инициализация MinIO завершена.';
-      exit 0;
-      "
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  rustfs_data:
 
 networks:
   recipe-blog-net:
