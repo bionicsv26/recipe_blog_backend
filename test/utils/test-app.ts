@@ -13,13 +13,10 @@ export async function createTestApp(): Promise<INestApplication> {
   await app.init();
 
   // Cron не должен стрелять во время прогона: EVERY_MINUTE (views) и 03:00 (cleanup)
-  // ломают детерминизм. Их поведение проверяется прямым вызовом метода в PR10/PR11.
-  app;
-  await Promise.all(
-    [...app.get(SchedulerRegistry).getCronJobs().values()].map((job) =>
-      job.stop(),
-    ),
-  );
+  // ломают детерминизм. Поведение cron проверяется прямым вызовом метода в PR10/PR11.
+  for (const job of app.get(SchedulerRegistry).getCronJobs().values()) {
+    await job.stop();
+  }
 
   return app;
 }
