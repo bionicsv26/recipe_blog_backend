@@ -18,7 +18,7 @@ export class RecipesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
-  ) {}
+  ) { }
 
   private async generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = slugify(title);
@@ -154,7 +154,7 @@ export class RecipesService {
     }
   }
 
-  async findAll(query: QueryRecipeDto, currentUser?: CurrentUserData) {
+  async findAll(query: QueryRecipeDto, _currentUser?: CurrentUserData) {
     const {
       page,
       limit,
