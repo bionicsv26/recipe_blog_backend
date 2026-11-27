@@ -23,7 +23,7 @@ export const CreateReviewSchema = z.object({
   images: z
     .array(ReviewImageInputSchema)
     .max(5, { message: 'Максимум 5 фото' })
-    .default([]),
+    .optional(),
 });
 
 export class CreateReviewDto extends createZodDto(CreateReviewSchema) {}

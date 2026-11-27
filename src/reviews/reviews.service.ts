@@ -118,7 +118,7 @@ export class ReviewsService {
       });
 
       // Синхронизация фото к отзыву
-      if (dto.images) {
+      if (dto.images !== undefined) {
         await tx.reviewImage.deleteMany({ where: { reviewId: review.id } });
         if (dto.images.length > 0) {
           await tx.reviewImage.createMany({
